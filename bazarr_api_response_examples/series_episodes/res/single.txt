@@ -1,0 +1,940 @@
+{
+    "data": [
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 12,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E12 - The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You (94 to Go) Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3225,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E12 - The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You (94 to Go) Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 31793
+                }
+            ],
+            "title": "The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You (94 to Go)",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 11,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E11 - Even If It Kills Me Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3224,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E11 - Even If It Kills Me Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 32080
+                }
+            ],
+            "title": "Even If It Kills Me",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 10,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E10 - Love Mission - Impossible Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3223,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E10 - Love Mission - Impossible Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 32628
+                }
+            ],
+            "title": "Love Mission: Impossible",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 9,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E09 - The Holy War of Love and Soul Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3222,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E09 - The Holy War of Love and Soul Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 33058
+                }
+            ],
+            "title": "The Holy War of Love and Soul",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 8,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E08 - Kiss Zombie Panic Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3221,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E08 - Kiss Zombie Panic Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 28702
+                }
+            ],
+            "title": "Kiss Zombie Panic",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 7,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E07 - Saying Hello to the Chemistry Girl Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3220,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E07 - Saying Hello to the Chemistry Girl Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 34047
+                }
+            ],
+            "title": "Saying Hello to the Chemistry Girl",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 6,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E06 - Everyone's Favorite - The Swimsuit Episode Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3219,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E06 - Everyone's Favorite - The Swimsuit Episode Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 28856
+                }
+            ],
+            "title": "Everyone's Favorite: The Swimsuit Episode",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 5,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E05 - The Hyper-Efficient Girl Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3218,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E05 - The Hyper-Efficient Girl Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 26767
+                }
+            ],
+            "title": "The Hyper-Efficient Girl",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 4,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E04 - Just When You Think It's a Hanky-Panky Episode Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3217,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E04 - Just When You Think It's a Hanky-Panky Episode Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 33861
+                }
+            ],
+            "title": "Just When You Think It's a Hanky-Panky Episode",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 3,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E03 - The Quiet Princess, the Knight, and the Samurai Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3216,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E03 - The Quiet Princess, the Knight, and the Samurai Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 24409
+                }
+            ],
+            "title": "The Quiet Princess, the Knight, and the Samurai",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 2,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E02 - First Kiss Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3215,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E02 - First Kiss Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 34352
+                }
+            ],
+            "title": "First Kiss",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 1,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E01 - The 2 Girlfriends Who Really, Really, Really Love You (98 to Go) Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3214,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E01 - The 2 Girlfriends Who Really, Really, Really Love You (98 to Go) Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 37850
+                }
+            ],
+            "title": "The 2 Girlfriends Who Really, Really, Really Love You (98 to Go)",
+            "sceneName": null
+        }
+    ]
+}

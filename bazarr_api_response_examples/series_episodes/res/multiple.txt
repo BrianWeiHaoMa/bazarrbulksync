@@ -1,0 +1,2188 @@
+{
+    "data": [
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 24,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E24 - 2.5 Dimensional Ririsa WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8710,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "2.5 Dimensional Ririsa",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 23,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E23 - Manga Club On the Beach WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8709,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Manga Club On the Beach",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 22,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E22 - This Wonderful World WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8708,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "This Wonderful World",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 21,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E21 - The Protagonist's Story WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8707,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "The Protagonist's Story",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 20,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E20 - The World We Create with Our Friends WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8706,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "The World We Create with Our Friends",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 19,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E19 - Time for Summer Comiket! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8705,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Time for Summer Comiket!",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 18,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E18 - Destiny WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8704,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Destiny",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 17,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E17 - Comrades in (Cosplay) Arms WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8703,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Comrades in (Cosplay) Arms",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 16,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E16 - My Way, Your Way WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8702,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "My Way, Your Way",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 15,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E15 - I'll Keep Evolving WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8701,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "I'll Keep Evolving",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 14,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E14 - Together with You WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8700,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Together with You",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 13,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E13 - Can We Be Friends WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8699,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Can We Be Friends?",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 12,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E12 - The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You (94 to Go) Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3225,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E12 - The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You (94 to Go) Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 31793
+                }
+            ],
+            "title": "The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You (94 to Go)",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 12,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E12 - Five Rising Stars WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8698,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Five Rising Stars",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 11,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E11 - Even If It Kills Me Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3224,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E11 - Even If It Kills Me Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 32080
+                }
+            ],
+            "title": "Even If It Kills Me",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 11,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E11 - My Enchanted Armor WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8697,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "My Enchanted Armor",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 10,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E10 - Love Mission - Impossible Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3223,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E10 - Love Mission - Impossible Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 32628
+                }
+            ],
+            "title": "Love Mission: Impossible",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 10,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E10 - Mayura vs. Nagomi!!! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8696,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Mayura vs. Nagomi!!!",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 9,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E09 - The Holy War of Love and Soul Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3222,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E09 - The Holy War of Love and Soul Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 33058
+                }
+            ],
+            "title": "The Holy War of Love and Soul",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 9,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E09 - You're Not Lillel! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8695,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "You're Not Lillel!",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 8,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E08 - Kiss Zombie Panic Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3221,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E08 - Kiss Zombie Panic Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 28702
+                }
+            ],
+            "title": "Kiss Zombie Panic",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 8,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E08 - Do You Love Cosplay WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8694,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Do You Love Cosplay?",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 7,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E07 - Saying Hello to the Chemistry Girl Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3220,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E07 - Saying Hello to the Chemistry Girl Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 34047
+                }
+            ],
+            "title": "Saying Hello to the Chemistry Girl",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 7,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E07 - We Need An Advisor! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8693,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "We Need An Advisor!",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 6,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E06 - Everyone's Favorite - The Swimsuit Episode Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3219,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E06 - Everyone's Favorite - The Swimsuit Episode Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 28856
+                }
+            ],
+            "title": "Everyone's Favorite: The Swimsuit Episode",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 6,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E06 - Tips From a Master! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8692,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Tips From a Master!?",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 5,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E05 - The Hyper-Efficient Girl Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3218,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E05 - The Hyper-Efficient Girl Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 26767
+                }
+            ],
+            "title": "The Hyper-Efficient Girl",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 5,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E05 - First Event Is Over!! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8691,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "First Event Is Over!!",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 4,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E04 - Just When You Think It's a Hanky-Panky Episode Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3217,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E04 - Just When You Think It's a Hanky-Panky Episode Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 33861
+                }
+            ],
+            "title": "Just When You Think It's a Hanky-Panky Episode",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 4,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E04 - Time For Our First Event! WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8690,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Time For Our First Event!",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 3,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E03 - The Quiet Princess, the Knight, and the Samurai Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3216,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E03 - The Quiet Princess, the Knight, and the Samurai Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 24409
+                }
+            ],
+            "title": "The Quiet Princess, the Knight, and the Samurai",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 3,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E03 - Lili x Miri WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8689,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Lili x Miri",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 2,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E02 - First Kiss Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3215,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E02 - First Kiss Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 34352
+                }
+            ],
+            "title": "First Kiss",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 2,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E02 - Cosplay Group Potential WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8688,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "Cosplay Group Potential?",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng"
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                }
+            ],
+            "episode": 1,
+            "missing_subtitles": [
+                {
+                    "name": "Chinese Simplified",
+                    "code2": "zh",
+                    "code3": "zho",
+                    "forced": false,
+                    "hi": false
+                }
+            ],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E01 - The 2 Girlfriends Who Really, Really, Really Love You (98 to Go) Bluray-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 3214,
+            "sonarrSeriesId": 32,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn",
+                    "path": "/data/media/media/cartoons/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You/Season 1/The 100 Girlfriends Who Really, Really, Really, Really, REALLY Love You - S01E01 - The 2 Girlfriends Who Really, Really, Really Love You (98 to Go) Bluray-1080p.ja.srt",
+                    "forced": false,
+                    "hi": false,
+                    "file_size": 37850
+                }
+            ],
+            "title": "The 2 Girlfriends Who Really, Really, Really Love You (98 to Go)",
+            "sceneName": null
+        },
+        {
+            "audio_language": [
+                {
+                    "name": "Japanese",
+                    "code2": "ja",
+                    "code3": "jpn"
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por"
+                }
+            ],
+            "episode": 1,
+            "missing_subtitles": [],
+            "monitored": true,
+            "path": "/data/media/media/cartoons/2.5 Dimensional Seduction/Season 1/2.5 Dimensional Seduction - S01E01 - New Student from Another Dimension WEBDL-1080p.mkv",
+            "season": 1,
+            "sonarrEpisodeId": 8687,
+            "sonarrSeriesId": 148,
+            "subtitles": [
+                {
+                    "name": "English",
+                    "code2": "en",
+                    "code3": "eng",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": false,
+                    "hi": false,
+                    "file_size": null
+                },
+                {
+                    "name": "Portuguese",
+                    "code2": "pt",
+                    "code3": "por",
+                    "path": null,
+                    "forced": true,
+                    "hi": false,
+                    "file_size": null
+                }
+            ],
+            "title": "New Student from Another Dimension",
+            "sceneName": null
+        }
+    ]
+}

@@ -205,3 +205,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# NEW THINGS NOT A PART OF THE PYTHON GITIGNORE TEMPLATE
+tmp*
+config.yaml
+.vscode
