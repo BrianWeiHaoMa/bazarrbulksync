@@ -1,0 +1,83 @@
+{
+    "data": [
+        {
+            "action": 5,
+            "title": "5 Centimeters per Second",
+            "timestamp": "now",
+            "description": "Japanese subtitles synchronization ended with an offset of 0 seconds and a framerate scale factor of 1.00.",
+            "radarrId": 3,
+            "monitored": true,
+            "path": null,
+            "language": {
+                "name": "Japanese",
+                "code2": "ja",
+                "code3": "jpn",
+                "forced": false,
+                "hi": false
+            },
+            "tags": [],
+            "score": null,
+            "subs_id": null,
+            "provider": null,
+            "subtitles_path": "/data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt",
+            "upgradable": false,
+            "parsed_timestamp": "09/24/25 16:59:06",
+            "blacklisted": false,
+            "matches": [],
+            "dont_matches": []
+        },
+        {
+            "action": 2,
+            "title": "5 Centimeters per Second",
+            "timestamp": "31 minutes ago",
+            "description": "Japanese subtitles manually downloaded from jimaku with a score of 78.33%.",
+            "radarrId": 3,
+            "monitored": true,
+            "path": null,
+            "language": {
+                "name": "Japanese",
+                "code2": "ja",
+                "code3": "jpn",
+                "forced": false,
+                "hi": false
+            },
+            "tags": [],
+            "score": "78.33%",
+            "subs_id": "https://jimaku.cc/entry/407/download/%5BGSGA%5D%20(SDH)%205%20Centimeters%20per%20Second%20(By%C5%8Dsoku%20Go%20Senchim%C4%93toru)%20%5BJP%20Official%5D.srt",
+            "provider": "jimaku",
+            "subtitles_path": "/data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt",
+            "upgradable": false,
+            "parsed_timestamp": "09/24/25 16:28:09",
+            "blacklisted": false,
+            "matches": [],
+            "dont_matches": []
+        },
+        {
+            "action": 5,
+            "title": "5 Centimeters per Second",
+            "timestamp": "31 minutes ago",
+            "description": "Japanese subtitles synchronization ended with an offset of -0.68 seconds and a framerate scale factor of 1.00.",
+            "radarrId": 3,
+            "monitored": true,
+            "path": null,
+            "language": {
+                "name": "Japanese",
+                "code2": "ja",
+                "code3": "jpn",
+                "forced": false,
+                "hi": false
+            },
+            "tags": [],
+            "score": null,
+            "subs_id": null,
+            "provider": null,
+            "subtitles_path": "/data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt",
+            "upgradable": false,
+            "parsed_timestamp": "09/24/25 16:28:09",
+            "blacklisted": false,
+            "matches": [],
+            "dont_matches": []
+        }
+    ],
+    "total": 9
+}
