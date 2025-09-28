@@ -2,14 +2,14 @@ from setuptools import setup, find_packages
 
 setup(
     name="bazarrbulksync",
-    version="0.0.7",
+    version="0.0.0",
     description="An optimized CLI tool to bulk sync subtitles in Bazarr",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="Brian Wei Hao Ma",
     author_email="brianmaytc@gmail.com",
     license="MIT",
-    url="https://github.com/BrianWeiHaoMa/BazarrBulkSync",
+    url="https://github.com/BrianWeiHaoMa/bazarrbulksync",
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",

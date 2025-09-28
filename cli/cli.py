@@ -33,7 +33,7 @@ def main():
     parser = ArgumentParser(
         prog="bazarrbulksync",
         description="A CLI tool to bulk sync subtitles in Bazarr. "
-        "You can find out more about the project at: https://github.com/BrianWeiHaoMa/BazarrBulkSync",
+        "You can find out more about the project at: https://github.com/BrianWeiHaoMa/bazarrbulksync",
     )
 
     parser.add_argument(
