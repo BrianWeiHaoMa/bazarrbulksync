@@ -35,14 +35,14 @@ Pull the official BazarrBulkSync image from DockerHub:
 docker pull wayhowma/bazarrbulksync:latest
 ```
 
-After replacing `/my_absolute_path` below with the directory path that you want to mount (this is the place you would like to store the BazarrBulkSync's config file and log file), you can run BazarrBulkSync:
+After replacing `/my_absolute_path` below with the directory path that you want to mount (this is the place you would like to store BazarrBulkSync's config file and log file), you can run BazarrBulkSync:
 ```
 docker run --rm -v /my_absolute_path:/app wayhowma/bazarrbulksync --help
 ```
 You should create a [config file](#config-file-template) in the mounted directory `/my_absolute_path`.
 
 ### Config File Template
-It is recommended to create the config file `bazarrbulksync_cli.yaml` in the same working directory as the one where you want to run BazarrBulkSync. This allows you to easily run the BazarrBulkSync each time without need to respecify the parameters. The content of `bazarrbulksync_cli.yaml` should follow the template below. 
+It is recommended to create the config file `bazarrbulksync_cli.yaml` in the same working directory as the one where you want to run BazarrBulkSync. This allows you to easily run BazarrBulkSync each time without need to respecify the parameters. The content of `bazarrbulksync_cli.yaml` should follow the template below. 
 ```yaml
 # bazarrbulksync_cli.yaml
 
@@ -132,7 +132,7 @@ docker run --rm -v /bazarrbulksync:/app wayhowma/bazarrbulksync:latest --sync mo
 2025-09-28 04:02:06,205 | Finished syncing movies. Total movies synced: 5
 ```
 
-Using the same config file as above, we run the sync again but only for movies that were not never synced after 2025-09-28 00:01:30 using
+Using the same config file as above, we run the sync again but only for movies that were never synced after 2025-09-28 00:01:30 using
 ```
 docker run --rm -v /bazarrbulksync:/app wayhowma/bazarrbulksync:latest --sync movies --latest-to-sync "2025-09-28 00:01:30"
 ```
