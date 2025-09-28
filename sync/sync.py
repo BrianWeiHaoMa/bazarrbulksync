@@ -58,11 +58,38 @@ class Syncer:
                 break
         return most_recent
 
+    def get_most_recent_movie_sync_time(
+        self,
+        radarr_id: int,
+        subtitle_path: str,
+    ) -> datetime:
+        movie_history = self.bazarr_api.get_movie_history(
+            radarr_id=radarr_id,
+        ).json()["data"]
+
+        return Syncer._helper_get_most_recent_sync_time(
+            history=movie_history,
+            subtitle_path=subtitle_path,
+        )
+
+    def get_most_recent_episode_sync_time(
+        self,
+        episode_id: int,
+        subtitle_path: str,
+    ) -> datetime:
+        episode_history = self.bazarr_api.get_episode_history(
+            episode_id=episode_id,
+        ).json()["data"]
+
+        return Syncer._helper_get_most_recent_sync_time(
+            history=episode_history,
+            subtitle_path=subtitle_path,
+        )
+
     def sync_movies(
         self,
         lastest_to_sync: datetime | None,
         original_format: str | None = None,
-        reference: str | None = None,
         max_offset_seconds: str | None = None,
         no_fix_framerate: str | None = None,
         gss: str | None = None,
@@ -90,12 +117,8 @@ class Syncer:
                     path = subtitle_data["path"]
                     if path is not None:
                         try:
-                            movie_history = self.bazarr_api.get_movie_history(
+                            most_recent = self.get_most_recent_movie_sync_time(
                                 radarr_id=movie_data["radarrId"],
-                            ).json()["data"]
-
-                            most_recent = Syncer._helper_get_most_recent_sync_time(
-                                history=movie_history,
                                 subtitle_path=path,
                             )
 
@@ -123,13 +146,22 @@ class Syncer:
                                 forced=str(subtitle_data["forced"]),
                                 hi=str(subtitle_data["hi"]),
                                 original_format=original_format,
-                                reference=reference,
                                 max_offset_seconds=max_offset_seconds,
                                 no_fix_framerate=no_fix_framerate,
                                 gss=gss,
                             )
 
-                            self.logger.info(f"Finished syncing {path}")
+                            new_most_recent = self.get_most_recent_movie_sync_time(
+                                radarr_id=movie_data["radarrId"],
+                                subtitle_path=path,
+                            )
+                            new_most_recent_str = new_most_recent.strftime(
+                                Syncer.DATETIME_STR_FMT
+                            )
+
+                            self.logger.info(
+                                f"Finished syncing {path} (newest sync {new_most_recent_str})"
+                            )
 
                             total_synced += 1
                             self.logger.info(f"Movies synced so far: {total_synced}")
@@ -147,7 +179,6 @@ class Syncer:
         self,
         lastest_to_sync: datetime | None,
         original_format: str | None = None,
-        reference: str | None = None,
         max_offset_seconds: str | None = None,
         no_fix_framerate: str | None = None,
         gss: str | None = None,
@@ -179,15 +210,9 @@ class Syncer:
                             path = subtitle_data["path"]
                             if path is not None:
                                 try:
-                                    episode_history = (
-                                        self.bazarr_api.get_episode_history(
-                                            episode_id=episode_data["sonarrEpisodeId"],
-                                        ).json()["data"]
-                                    )
-
                                     most_recent = (
-                                        Syncer._helper_get_most_recent_sync_time(
-                                            history=episode_history,
+                                        self.get_most_recent_episode_sync_time(
+                                            episode_id=episode_data["sonarrEpisodeId"],
                                             subtitle_path=path,
                                         )
                                     )
@@ -216,13 +241,24 @@ class Syncer:
                                         forced=str(subtitle_data["forced"]),
                                         hi=str(subtitle_data["hi"]),
                                         original_format=original_format,
-                                        reference=reference,
                                         max_offset_seconds=max_offset_seconds,
                                         no_fix_framerate=no_fix_framerate,
                                         gss=gss,
                                     )
 
-                                    self.logger.info(f"Finished syncing {path}")
+                                    new_most_recent = (
+                                        self.get_most_recent_episode_sync_time(
+                                            episode_id=episode_data["sonarrEpisodeId"],
+                                            subtitle_path=path,
+                                        )
+                                    )
+                                    new_most_recent_str = new_most_recent.strftime(
+                                        Syncer.DATETIME_STR_FMT
+                                    )
+
+                                    self.logger.info(
+                                        f"Finished syncing {path} (newest sync {new_most_recent_str})"
+                                    )
 
                                     total_synced += 1
                                     self.logger.info(

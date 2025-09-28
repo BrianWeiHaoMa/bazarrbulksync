@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="bazarrbulksync",
-    version="0.0.2",
-    description="A CLI tool to bulk sync subtitles in Bazarr",
+    version="0.0.7",
+    description="An optimized CLI tool to bulk sync subtitles in Bazarr",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     author="Brian Wei Hao Ma",

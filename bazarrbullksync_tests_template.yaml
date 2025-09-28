@@ -1,7 +1,7 @@
-# This is the tests config template.
-# Please make the file tests_config.yaml in 
-# the same directory as this file 
-# with the same layout as this and replace 
+# This is the tests config template. Please make 
+# the file bazarrbulksync_tests.yaml in the same
+# directory as the one where you want to run the tests
+# from with the same layout as this and replace 
 # the dummy values with the actual corresponding 
 # values.
 

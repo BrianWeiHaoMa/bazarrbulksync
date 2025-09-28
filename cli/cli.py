@@ -22,7 +22,12 @@ from .config import (
     REQUEST_TIMEOUT,
     STOP_ON_REQUEST_FAILURE,
     MAX_REQUEST_RETRIES,
+    ORIGINAL_FORMAT,
+    MAX_OFFSET_SECONDS,
+    NO_FIX_FRAMERATE,
+    GSS,
 )
+
 
 def main():
     parser = ArgumentParser(
@@ -104,36 +109,33 @@ def main():
         "--original-format",
         type=str,
         choices=["True", "False"],
-        default=None,
-        help="The original format option in the API when syncing subtitles",
-    )
-    parser.add_argument(
-        "--reference",
-        type=str,
-        default=None,
-        help="The reference option in the API when syncing subtitles",
+        default=ORIGINAL_FORMAT,
+        help="Use original subtitles format when syncing subtitles",
     )
     parser.add_argument(
         "--max-offset-seconds",
         type=str,
-        default=None,
-        help="The max offset seconds option in the API when syncing subtitles",
+        default=MAX_OFFSET_SECONDS,
+        help="Maximum offset seconds to allow when syncing subtitles",
     )
     parser.add_argument(
         "--no-fix-framerate",
         type=str,
-        default=None,
-        help="The no fix framerate option in the API when syncing subtitles",
+        choices=["True", "False"],
+        default=NO_FIX_FRAMERATE,
+        help="Don't try to fix framerate when syncing subtitles",
     )
     parser.add_argument(
         "--gss",
         type=str,
-        default=None,
-        help="The gss option in the API when syncing subtitles",
+        choices=["True", "False"],
+        default=GSS,
+        help="Use Golden-Section Search when syncing subtitles",
     )
     parser.add_argument(
         "--stop-on-request-failure",
         type=lambda x: (str(x).lower() == "true"),
+        choices=["True", "False"],
         default=STOP_ON_REQUEST_FAILURE,
         help="True if you want to stop the sync when a request fails",
     )
@@ -219,7 +221,6 @@ def main():
             syncer.sync_movies(
                 lastest_to_sync=latest_to_sync,
                 original_format=parsed_args.original_format,
-                reference=parsed_args.reference,
                 max_offset_seconds=parsed_args.max_offset_seconds,
                 no_fix_framerate=parsed_args.no_fix_framerate,
                 gss=parsed_args.gss,
@@ -229,7 +230,6 @@ def main():
             syncer.sync_episodes(
                 lastest_to_sync=latest_to_sync,
                 original_format=parsed_args.original_format,
-                reference=parsed_args.reference,
                 max_offset_seconds=parsed_args.max_offset_seconds,
                 no_fix_framerate=parsed_args.no_fix_framerate,
                 gss=parsed_args.gss,
@@ -239,7 +239,6 @@ def main():
             syncer.sync_movies(
                 lastest_to_sync=latest_to_sync,
                 original_format=parsed_args.original_format,
-                reference=parsed_args.reference,
                 max_offset_seconds=parsed_args.max_offset_seconds,
                 no_fix_framerate=parsed_args.no_fix_framerate,
                 gss=parsed_args.gss,
@@ -248,7 +247,6 @@ def main():
             syncer.sync_episodes(
                 lastest_to_sync=latest_to_sync,
                 original_format=parsed_args.original_format,
-                reference=parsed_args.reference,
                 max_offset_seconds=parsed_args.max_offset_seconds,
                 no_fix_framerate=parsed_args.no_fix_framerate,
                 gss=parsed_args.gss,

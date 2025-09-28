@@ -1,0 +1,35 @@
+# This is the command-line tool config template. Please make the file
+# bazarrbulksync_cli.yaml in the same working directory 
+# as the one where you want to run the command-line tool 
+# from with the same layout as this and replace the dummy
+# values with the actual corresponding values.
+
+bazarr:
+  base_url: http://192.168.1.251:6767/ # replace this with your bazarr service url
+  api_key: asdai21g3isufykasgfs7iodftas9d8f # replace this with your bazarr API key
+
+output_messages_to_screen: true # false if you don't want to see messages on the screen
+log_messages_to_file: true # false if you don't want to log messages to a file
+log_messages_file_path: ./bazarrbulksync.log # the file path to store the log messages
+
+# These are values for controlling maximum API request payload sizes.
+# If you are running out of ram, reducing these values may help
+# especially if the number of movies/series in your bazarr is large.
+max_movies_per_request: 25 
+max_series_per_request: 25
+
+# The maximum number of retries for a failed API request.
+max_request_retries: 3
+
+# The maximum amount of time to wait (in seconds) for the bazarr server 
+# to respond before automatically failing a request.
+request_timeout: 1600
+
+# A request failure is when the same request fails max_request_retries times.
+stop_on_request_failure: false # true if you want the program to stop on the first request failure
+
+# These are additional optional parameters for the API when syncing subtitles.
+original_format: null # Use original subtitles format from ["True", "False"]
+max_offset_seconds: null # Maximum offset seconds to allow as a string ex. "300"
+no_fix_framerate: null # Don't try to fix framerate from ["True", "False"]
+gss: null # Use Golden-Section Search from ["True", "False"]

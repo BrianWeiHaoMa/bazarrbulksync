@@ -209,5 +209,6 @@ __marimo__/
 
 # NEW THINGS NOT A PART OF THE PYTHON GITIGNORE TEMPLATE
 tmp*
-config.yaml
+bazarrbulksync_cli.yaml
+bazarrbulksync_tests.yaml
 .vscode

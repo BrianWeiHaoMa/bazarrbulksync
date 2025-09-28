@@ -1,6 +1,5 @@
 import itertools
 from urllib.parse import urljoin
-import logging
 
 import pytest
 import requests
@@ -12,8 +11,6 @@ from .config import (
     BAZARR_API_KEY,
     BAZARR_BASE_URL,
 )
-
-logging.disable()
 
 bazarr_api = BazarrAPI(
     base_url=BAZARR_BASE_URL,

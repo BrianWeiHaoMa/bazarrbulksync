@@ -3,7 +3,7 @@ import sys
 
 import yaml
 
-CONFIG_PATH = "./bazarrbulksync_configs/tests_config.yaml"
+CONFIG_PATH = "./bazarrbulksync_tests.yaml"
 
 if not os.path.exists(CONFIG_PATH):
     print(f"please create the config file at {CONFIG_PATH}", file=sys.stderr)

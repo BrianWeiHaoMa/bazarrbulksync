@@ -1,7 +1,6 @@
 import itertools
 from urllib.parse import urljoin
 import json
-import logging
 
 import requests
 import pytest
@@ -13,8 +12,6 @@ from .config import (
     BAZARR_API_KEY,
     BAZARR_BASE_URL,
 )
-
-logging.disable()
 
 base_headers = {
     "X-API-KEY": BAZARR_API_KEY,

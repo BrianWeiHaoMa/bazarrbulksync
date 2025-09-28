@@ -2,7 +2,7 @@ import os
 
 import yaml
 
-CONFIG_PATH = "./bazarrbulksync_configs/cli_config.yaml"
+CONFIG_PATH = "./bazarrbulksync_cli.yaml"
 
 config = {}
 if os.path.exists(CONFIG_PATH):
@@ -56,3 +56,9 @@ REQUEST_TIMEOUT = _get_nested_value("request_timeout", default=30, data=config)
 STOP_ON_REQUEST_FAILURE = _get_nested_value(
     "stop_on_request_failure", default=False, data=config
 )
+
+ORIGINAL_FORMAT = _get_nested_value("original_format", default=None, data=config)
+REFERENCE = _get_nested_value("reference", default=None, data=config)
+MAX_OFFSET_SECONDS = _get_nested_value("max_offset_seconds", default=None, data=config)
+NO_FIX_FRAMERATE = _get_nested_value("no_fix_framerate", default=None, data=config)
+GSS = _get_nested_value("gss", default=None, data=config)
