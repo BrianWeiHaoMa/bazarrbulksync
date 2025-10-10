@@ -5,7 +5,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir --upgrade pip
 
 RUN pip install --no-cache-dir \
-    bazarrbulksync==0.0.0
+    bazarrbulksync==0.1.0
 
 ENTRYPOINT ["bazarrbulksync"]
 

@@ -189,6 +189,10 @@ class BazarrAPI:
                     # yielding chunks anymore
                     raise
 
+                # signify that there was a request
+                # failure for this chunk
+                yield None
+
             curr_start += payload_size
             left -= payload_size
 

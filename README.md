@@ -85,24 +85,24 @@ bazarrbulksync --sync movies
 ```
 
 ```
-2025-09-28 00:15:24,289 | Bazarr Bulk Sync CLI Tool Arguments: Namespace(sync='movies', bazarr_base_url='http://192.168.1.251:6767/', bazarr_api_key='asdai21g3isufykasgfs7iodftas9d8f', output_messages_to_screen=True, log_messages_to_file=True, log_messages_file_path='./bazarrbulksync.log', max_movies_per_request=25, max_series_per_request=25, max_request_retries=1, request_timeout=1600, latest_to_sync='9999-12-31', original_format=None, max_offset_seconds=None, no_fix_framerate=None, gss=None, stop_on_request_failure=False)
-2025-09-28 00:15:24,291 | Syncing movies...
-2025-09-28 00:15:24,364 | Syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (previous sync 2025-09-28 00:08:13)
-2025-09-28 00:15:28,332 | Finished syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (newest sync 2025-09-28 00:15:28)
-2025-09-28 00:15:28,332 | Movies synced so far: 1
-2025-09-28 00:15:28,354 | Syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-09-28 00:08:32)
-2025-09-28 00:15:47,170 | Finished syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-09-28 00:15:47)
-2025-09-28 00:15:47,171 | Movies synced so far: 2
-2025-09-28 00:15:47,213 | Syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (previous sync 2025-09-28 00:01:43)
-2025-09-28 00:16:04,363 | Finished syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (newest sync 2025-09-28 00:16:04)
-2025-09-28 00:16:04,364 | Movies synced so far: 3
-2025-09-28 00:16:04,394 | Syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (previous sync 2025-09-28 00:01:55)
-2025-09-28 00:16:15,712 | Finished syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (newest sync 2025-09-28 00:16:15)
-2025-09-28 00:16:15,712 | Movies synced so far: 4
-2025-09-28 00:16:15,764 | Syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-09-28 00:02:06)
-2025-09-28 00:16:26,659 | Finished syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-09-28 00:16:26)
-2025-09-28 00:16:26,659 | Movies synced so far: 5
-2025-09-28 00:16:26,688 | Finished syncing movies. Total movies synced: 5
+2025-10-10 17:43:57,772 | Bazarr Bulk Sync CLI Tool Arguments: Namespace(sync='movies', bazarr_base_url='http://192.168.1.251:6767/', bazarr_api_key='0f8b21b007f3f36da4cc94859060facd', output_messages_to_screen=True, log_messages_to_file=True, log_messages_file_path='./bazarrbulksync.log', max_movies_per_request=25, max_series_per_request=25, max_request_retries=3, request_timeout=1600, latest_to_sync='9999-12-31', original_format=None, max_offset_seconds=None, no_fix_framerate=None, gss=None, stop_on_request_failure=False)
+2025-10-10 17:43:57,781 | Syncing movies. 92 movies to process...
+2025-10-10 17:43:57,814 | Movies processed: 0/92, Subtitles synced: 0, Request failures: 0.
+2025-10-10 17:43:57,814 | Syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (previous sync 2025-10-10 00:23:31)
+2025-10-10 17:44:07,993 | Finished syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (newest sync 2025-10-10 17:44:07)       
+2025-10-10 17:44:08,002 | Movies processed: 16/92, Subtitles synced: 1, Request failures: 0.
+2025-10-10 17:44:08,003 | Syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-10-10 00:23:50)
+2025-10-10 17:44:25,826 | Finished syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-10-10 17:44:24)
+2025-10-10 17:44:25,898 | Movies processed: 40/92, Subtitles synced: 2, Request failures: 0.
+2025-10-10 17:44:25,898 | Syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (previous sync 2025-10-10 00:24:09)
+2025-10-10 17:44:42,138 | Finished syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (newest sync 2025-10-10 17:44:41)
+2025-10-10 17:44:42,146 | Movies processed: 43/92, Subtitles synced: 3, Request failures: 0.
+2025-10-10 17:44:42,146 | Syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (previous sync 2025-10-10 00:24:22)
+2025-10-10 17:44:53,026 | Finished syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (newest sync 2025-10-10 17:44:52)
+2025-10-10 17:44:53,072 | Movies processed: 58/92, Subtitles synced: 4, Request failures: 0.
+2025-10-10 17:44:53,073 | Syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-10-10 00:24:35)
+2025-10-10 17:45:04,243 | Finished syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-10-10 17:45:03)
+2025-10-10 17:45:04,258 | Finished syncing movies. Movies processed: 92/92, Subtitles synced: 5, Request failures: 0.
 ```
 
 ### Docker
@@ -112,44 +112,44 @@ docker run --rm -v /bazarrbulksync:/app wayhowma/bazarrbulksync:latest --sync mo
 ```
 
 ```
-2025-09-28 04:01:04,012 | Bazarr Bulk Sync CLI Tool Arguments: Namespace(sync='movies', bazarr_base_url='http://192.168.1.251:6767/', bazarr_api_key='asdai21g3isufykasgfs7iodftas9d8f', output_messages_to_screen=True, log_messages_to_file=True, log_messages_file_path='./bazarrbulksync.log', max_movies_per_request=25, max_series_per_request=25, max_request_retries=1, request_timeout=1600, latest_to_sync='9999-12-31', original_format=None, max_offset_seconds=None, no_fix_framerate=None, gss=None, stop_on_request_failure=False)
-2025-09-28 04:01:04,018 | Syncing movies...
-2025-09-28 04:01:04,060 | Syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (previous sync 2025-09-27 23:57:21)
-2025-09-28 04:01:08,200 | Finished syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (newest sync 2025-09-28 00:01:08)
-2025-09-28 04:01:08,201 | Movies synced so far: 1
-2025-09-28 04:01:08,212 | Syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-09-27 23:57:39)
-2025-09-28 04:01:27,074 | Finished syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-09-28 00:01:27)
-2025-09-28 04:01:27,075 | Movies synced so far: 2
-2025-09-28 04:01:27,105 | Syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (previous sync 2025-09-27 21:11:54)
-2025-09-28 04:01:43,846 | Finished syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (newest sync 2025-09-28 00:01:43)
-2025-09-28 04:01:43,847 | Movies synced so far: 3
-2025-09-28 04:01:43,858 | Syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (previous sync 2025-09-27 21:12:06)
-2025-09-28 04:01:55,179 | Finished syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (newest sync 2025-09-28 00:01:55)
-2025-09-28 04:01:55,180 | Movies synced so far: 4
-2025-09-28 04:01:55,209 | Syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-09-27 21:12:16)
-2025-09-28 04:02:06,189 | Finished syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-09-28 00:02:06)
-2025-09-28 04:02:06,189 | Movies synced so far: 5
-2025-09-28 04:02:06,205 | Finished syncing movies. Total movies synced: 5
+2025-10-10 17:43:57,772 | Bazarr Bulk Sync CLI Tool Arguments: Namespace(sync='movies', bazarr_base_url='http://192.168.1.251:6767/', bazarr_api_key='0f8b21b007f3f36da4cc94859060facd', output_messages_to_screen=True, log_messages_to_file=True, log_messages_file_path='./bazarrbulksync.log', max_movies_per_request=25, max_series_per_request=25, max_request_retries=3, request_timeout=1600, latest_to_sync='9999-12-31', original_format=None, max_offset_seconds=None, no_fix_framerate=None, gss=None, stop_on_request_failure=False)
+2025-10-10 17:43:57,781 | Syncing movies. 92 movies to process...
+2025-10-10 17:43:57,814 | Movies processed: 0/92, Subtitles synced: 0, Request failures: 0.
+2025-10-10 17:43:57,814 | Syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (previous sync 2025-10-10 00:23:31)
+2025-10-10 17:44:07,993 | Finished syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (newest sync 2025-10-10 17:44:07)       
+2025-10-10 17:44:08,002 | Movies processed: 16/92, Subtitles synced: 1, Request failures: 0.
+2025-10-10 17:44:08,003 | Syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-10-10 00:23:50)
+2025-10-10 17:44:25,826 | Finished syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-10-10 17:44:24)
+2025-10-10 17:44:25,898 | Movies processed: 40/92, Subtitles synced: 2, Request failures: 0.
+2025-10-10 17:44:25,898 | Syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (previous sync 2025-10-10 00:24:09)
+2025-10-10 17:44:42,138 | Finished syncing /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (newest sync 2025-10-10 17:44:41)
+2025-10-10 17:44:42,146 | Movies processed: 43/92, Subtitles synced: 3, Request failures: 0.
+2025-10-10 17:44:42,146 | Syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (previous sync 2025-10-10 00:24:22)
+2025-10-10 17:44:53,026 | Finished syncing /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (newest sync 2025-10-10 17:44:52)
+2025-10-10 17:44:53,072 | Movies processed: 58/92, Subtitles synced: 4, Request failures: 0.
+2025-10-10 17:44:53,073 | Syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-10-10 00:24:35)
+2025-10-10 17:45:04,243 | Finished syncing /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-10-10 17:45:03)
+2025-10-10 17:45:04,258 | Finished syncing movies. Movies processed: 92/92, Subtitles synced: 5, Request failures: 0.
 ```
 
-Using the same config file as above, we run the sync again but only for movies that were never synced after 2025-09-28 00:01:30 using
+Using the same config file as above, we run the sync again but only for movies that were never synced after 2025-10-10 17:44:26 using
 ```
-docker run --rm -v /bazarrbulksync:/app wayhowma/bazarrbulksync:latest --sync movies --latest-to-sync "2025-09-28 00:01:30"
+docker run --rm -v /bazarrbulksync:/app wayhowma/bazarrbulksync:latest --sync movies --latest-to-sync "2025-10-10 17:44:26"
 ```
 
 ```
-2025-09-28 04:08:08,920 | Bazarr Bulk Sync CLI Tool Arguments: Namespace(sync='movies', bazarr_base_url='http://192.168.1.251:6767/', bazarr_api_key='asdai21g3isufykasgfs7iodftas9d8f', output_messages_to_screen=True, log_messages_to_file=True, log_messages_file_path='./bazarrbulksync.log', max_movies_per_request=25, max_series_per_request=25, max_request_retries=1, request_timeout=1600, latest_to_sync='2025-09-28 00:01:30', original_format=None, max_offset_seconds=None, no_fix_framerate=None, gss=None, stop_on_request_failure=False)
-2025-09-28 04:08:08,928 | Syncing movies...
-2025-09-28 04:08:08,971 | Syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (previous sync 2025-09-28 00:01:08)
-2025-09-28 04:08:13,115 | Finished syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (newest sync 2025-09-28 00:08:13)
-2025-09-28 04:08:13,115 | Movies synced so far: 1
-2025-09-28 04:08:13,125 | Syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-09-28 00:01:27)
-2025-09-28 04:08:32,166 | Finished syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-09-28 00:08:32)
-2025-09-28 04:08:32,167 | Movies synced so far: 2
-2025-09-28 04:08:32,197 | Skipping /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (last synced at 2025-09-28 00:01:43)
-2025-09-28 04:08:32,206 | Skipping /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (last synced at 2025-09-28 00:01:55)
-2025-09-28 04:08:32,234 | Skipping /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (last synced at 2025-09-28 00:02:06)
-2025-09-28 04:08:32,250 | Finished syncing movies. Total movies synced: 2
+2025-10-10 17:47:17,964 | Bazarr Bulk Sync CLI Tool Arguments: Namespace(sync='movies', bazarr_base_url='http://192.168.1.251:6767/', bazarr_api_key='0f8b21b007f3f36da4cc94859060facd', output_messages_to_screen=True, log_messages_to_file=True, log_messages_file_path='./bazarrbulksync.log', max_movies_per_request=25, max_series_per_request=25, max_request_retries=3, request_timeout=1600, latest_to_sync='2025-10-10 17:44:26', original_format=None, max_offset_seconds=None, no_fix_framerate=None, gss=None, stop_on_request_failure=False)
+2025-10-10 17:47:17,993 | Syncing movies. 92 movies to process...
+2025-10-10 17:47:18,039 | Movies processed: 0/92, Subtitles synced: 0, Request failures: 0.
+2025-10-10 17:47:18,039 | Syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (previous sync 2025-10-10 17:44:07)
+2025-10-10 17:47:28,116 | Finished syncing /data/media/media/movies/5 Centimeters per Second (2007)/[Arid] 5 Centimeters per Second (BDRip 1920x1080 Hi10 FLAC) [FD8B6FF2].ja.srt (newest sync 2025-10-10 17:47:27)
+2025-10-10 17:47:28,146 | Movies processed: 16/92, Subtitles synced: 1, Request failures: 0.
+2025-10-10 17:47:28,146 | Syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (previous sync 2025-10-10 17:44:24)
+2025-10-10 17:47:46,712 | Finished syncing /data/media/media/movies/Django Unchained (2012)/Django.Unchained.2012.1080p.BluRay.x264.YIFY.en.srt (newest sync 2025-10-10 17:47:45)
+2025-10-10 17:47:46,738 | Skipping /data/media/media/movies/KPop Demon Hunters (2025)/KPop.Demon.Hunters.2025.1080p.WEBRip.x264.AAC5.1-[YTS.MX].en.srt (last synced at 2025-10-10 17:44:41)
+2025-10-10 17:47:46,746 | Skipping /data/media/media/movies/Kung Fu Panda 3 (2016)/Kung.Fu.Panda.3.2016.1080p.BluRay.x264-[YTS.AG].en.srt (last synced at 2025-10-10 17:44:52)
+2025-10-10 17:47:46,770 | Skipping /data/media/media/movies/Penguins of Madagascar (2014)/Penguins.of.Madagascar.2014.1080p.BluRay.x264.YIFY.en.srt (last synced at 2025-10-10 17:45:03)
+2025-10-10 17:47:46,784 | Finished syncing movies. Movies processed: 92/92, Subtitles synced: 2, Request failures: 0.
 ```
 
 ## Contributing

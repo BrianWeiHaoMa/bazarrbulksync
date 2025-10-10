@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="bazarrbulksync",
-    version="0.0.0",
+    version="0.1.0",
     description="An optimized command-line tool for bulk syncing media subtitles in Bazarr",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

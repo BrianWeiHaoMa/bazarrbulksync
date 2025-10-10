@@ -8,6 +8,29 @@ from .bazarr import (
 )
 
 
+class LoggingData:
+    subtitles_synced: int = 0
+    request_failures: int = 0
+    chunk: int = 0
+
+
+class MoviesLoggingData(LoggingData):
+    movies_processed: int = 0
+
+    def __init__(self, total_movies: int):
+        super().__init__()
+        self.total_movies = total_movies
+
+
+class SeriesLoggingData(LoggingData):
+    series_processed: int = 0
+    episodes_processed: int = 0
+
+    def __init__(self, total_series: int):
+        super().__init__()
+        self.total_series = total_series
+
+
 class Syncer:
     """A class to sync subtitles in Bazarr."""
 
@@ -106,12 +129,38 @@ class Syncer:
         if lastest_to_sync is None:
             lastest_to_sync = self.lastest_to_sync
 
-        self.logger.info("Syncing movies...")
-        total_synced = 0
+        for res_movies in self.bazarr_api.get_movies(
+            start=BazarrAPI.LARGE_NUMBER,
+            length=1,
+            stop_on_request_failure=self.stop_on_request_failure,
+        ):
+            if res_movies is None:
+                # a request failure here means
+                # something is probably wrong
+                # so we will not proceed
+                raise ValueError("Failed to get total movies.")
+
+            total_movies = res_movies.json()["total"]
+            break
+
+        movies_logging_data = MoviesLoggingData(total_movies=total_movies)
+
+        self.logger.info(
+            f"Syncing movies. {movies_logging_data.total_movies} movies to process..."
+        )
         for res_movies in self.bazarr_api.get_movies(
             max_payload_size=max_payload_size,
             stop_on_request_failure=self.stop_on_request_failure,
         ):
+            movies_logging_data.chunk += 1
+
+            if res_movies is None:
+                movies_logging_data.request_failures += 1
+                self.logger.warning(
+                    f"Failed to get movies chunk {movies_logging_data.chunk}, skipping. Request failures so far: {movies_logging_data.request_failures}."
+                )
+                continue
+
             for movie_data in res_movies.json()["data"]:
                 for subtitle_data in movie_data["subtitles"]:
                     path = subtitle_data["path"]
@@ -132,6 +181,10 @@ class Syncer:
                                     f"Skipping {path} (last synced at {most_recent_str})"
                                 )
                                 continue
+
+                            self.logger.info(
+                                f"Movies processed: {movies_logging_data.movies_processed}/{movies_logging_data.total_movies}, Subtitles synced: {movies_logging_data.subtitles_synced}, Request failures: {movies_logging_data.request_failures}."
+                            )
 
                             self.logger.info(
                                 f"Syncing {path} (previous sync {most_recent_str})"
@@ -163,16 +216,17 @@ class Syncer:
                                 f"Finished syncing {path} (newest sync {new_most_recent_str})"
                             )
 
-                            total_synced += 1
-                            self.logger.info(f"Movies synced so far: {total_synced}")
+                            movies_logging_data.subtitles_synced += 1
                         except requests.exceptions.RequestException as e:
                             if self.stop_on_request_failure:
                                 raise
 
                             self.logger.warning(f"Failed to sync, skipping: {e}")
+                            movies_logging_data.request_failures += 1
+                movies_logging_data.movies_processed += 1
 
         self.logger.info(
-            f"Finished syncing movies. Total movies synced: {total_synced}"
+            f"Finished syncing movies. Movies processed: {movies_logging_data.movies_processed}/{movies_logging_data.total_movies}, Subtitles synced: {movies_logging_data.subtitles_synced}, Request failures: {movies_logging_data.request_failures}."
         )
 
     def sync_episodes(
@@ -195,12 +249,38 @@ class Syncer:
         if lastest_to_sync is None:
             lastest_to_sync = self.lastest_to_sync
 
-        self.logger.info("Syncing episodes...")
-        total_synced = 0
+        for res_series in self.bazarr_api.get_series(
+            start=BazarrAPI.LARGE_NUMBER,
+            length=1,
+            stop_on_request_failure=self.stop_on_request_failure,
+        ):
+            if res_series is None:
+                # a request failure here means
+                # something is probably wrong
+                # so we will not proceed
+                raise ValueError("Failed to get total series.")
+
+            total_series = res_series.json()["total"]
+            break
+
+        series_logging_data = SeriesLoggingData(total_series=total_series)
+
+        self.logger.info(
+            f"Syncing episodes. {series_logging_data.total_series} series to process..."
+        )
         for res_series in self.bazarr_api.get_series(
             max_payload_size=max_payload_size,
             stop_on_request_failure=self.stop_on_request_failure,
         ):
+            series_logging_data.chunk += 1
+
+            if res_series is None:
+                series_logging_data.request_failures += 1
+                self.logger.warning(
+                    f"Failed to get series chunk {series_logging_data.chunk}, skipping. Request failures so far: {series_logging_data.request_failures}."
+                )
+                continue
+
             for series_data in res_series.json()["data"]:
                 try:
                     for episode_data in self.bazarr_api.get_episodes(
@@ -227,6 +307,10 @@ class Syncer:
                                             f"Skipping {path} (last synced at {most_recent_str})"
                                         )
                                         continue
+
+                                    self.logger.info(
+                                        f"Series processed: {series_logging_data.series_processed}/{series_logging_data.total_series}, Episodes processed: {series_logging_data.episodes_processed}, Subtitles synced: {series_logging_data.subtitles_synced}, Request failures: {series_logging_data.request_failures}."
+                                    )
 
                                     self.logger.info(
                                         f"Syncing {path} (previous sync {most_recent_str})"
@@ -260,10 +344,7 @@ class Syncer:
                                         f"Finished syncing {path} (newest sync {new_most_recent_str})"
                                     )
 
-                                    total_synced += 1
-                                    self.logger.info(
-                                        f"Episodes synced so far: {total_synced}"
-                                    )
+                                    series_logging_data.subtitles_synced += 1
                                 except requests.exceptions.RequestException as e:
                                     if self.stop_on_request_failure:
                                         raise
@@ -271,6 +352,8 @@ class Syncer:
                                     self.logger.warning(
                                         f"Failed to sync, skipping: {e}"
                                     )
+                                    series_logging_data.request_failures += 1
+                        series_logging_data.episodes_processed += 1
                 except requests.exceptions.RequestException as e:
                     if self.stop_on_request_failure:
                         raise
@@ -278,7 +361,9 @@ class Syncer:
                     self.logger.warning(
                         f"Failed to get episodes for series, skipping: {e}"
                     )
+                    series_logging_data.request_failures += 1
+                series_logging_data.series_processed += 1
 
         self.logger.info(
-            f"Finished syncing episodes. Total episodes synced: {total_synced}"
+            f"Finished syncing episodes. Series processed: {series_logging_data.series_processed}/{series_logging_data.total_series}, Episodes processed: {series_logging_data.episodes_processed}, Subtitles synced: {series_logging_data.subtitles_synced}, Request failures: {series_logging_data.request_failures}."
         )
