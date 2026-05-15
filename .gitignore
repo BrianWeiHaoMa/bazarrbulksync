@@ -212,3 +212,4 @@ tmp*
 bazarrbulksync_cli.yaml
 bazarrbulksync_tests.yaml
 .vscode
+.agents

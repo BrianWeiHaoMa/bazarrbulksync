@@ -1,0 +1,57 @@
+# Your Bazarr endpoint.
+base_url: http://192.168.1.251:6767/
+
+# Your Bazarr API key.
+api_key: 0f8b21b007f3f36da4cc94859060facd
+
+# How many series to fetch per Bazarr series-list API call.
+series_chunk_size: 3000
+
+# How many movies to fetch per Bazarr movies-list API call.
+movies_chunk_size: 3000
+
+# Approximate episodes fetched per API call (approximate because we 
+# fetch all the episodes in an entire series at a time).
+episodes_chunk_size: 6000
+
+# For `sync before`: how many distinct episode or movie IDs to process per
+# batch when querying Bazarr history (one history API call per ID).
+before_history_batch_size: 3000
+
+timeout_seconds: 30
+retries: 2
+media_type: all # all, series, movies
+
+# File logging is off unless log_enabled is true. When on, logs go to log_file if set,
+# otherwise to the default path ./bazarrbulksync/bazarrbulksync.log.
+log_enabled: false
+log_file:
+
+# When true and a log file is in use, include DEBUG (HTTP, per-job).
+log_debug: false
+
+sync:
+  # Blank means sync every local subtitle language. Set "en", "ja", etc. to filter.
+  language:
+
+  # Blank preserves each subtitle entry's current Bazarr forced/hearing-impaired flags. 
+  # Set true or false to control.
+  forced:
+  hi:
+
+  # Maximum sync offset seconds.
+  max_offset_seconds: 60 
+  
+  # Toggle framerate fixing.
+  no_fix_framerate: false 
+
+  # Toggle usage of Golden-Section Search algorithm during syncing.
+  gss: false 
+
+  # Sync reference track or subtitle path.
+  reference: 
+
+
+
+
+
