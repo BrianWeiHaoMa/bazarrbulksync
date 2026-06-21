@@ -25,11 +25,11 @@ media_type: all # all, series, movies
 
 # File logging is off unless log_enabled is true. When on, logs go to log_file if set,
 # otherwise to the default path ./bazarrbulksync/bazarrbulksync.log.
-log_enabled: true
+log_enabled: false
 log_file:
 
 # When true and a log file is in use, include DEBUG (HTTP, per-job).
-log_debug: true
+log_debug: false
 
 sync:
   # Blank means sync every local subtitle language. Set "en", "ja", etc. to filter.
