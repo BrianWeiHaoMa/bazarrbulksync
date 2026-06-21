@@ -230,6 +230,7 @@ def jobs_for_episodes(
                 season=episode.season,
                 episode=episode.episode,
                 subtitle=subtitle,
+                series_id=episode.sonarr_series_id,
             )
 
 
@@ -330,18 +331,6 @@ def _latest_actions_for_movie_ids(
             events = client.get_movie_history(radarr_id=radarr_id)
             _merge_latest_sync_maps(result, latest_actions(events, action_code=action_code))
     return result
-
-
-def _latest_syncs_for_episode_ids(
-    client: BazarrClient, episode_ids: Iterable[int], batch_size: int
-) -> dict[int, datetime]:
-    return _latest_actions_for_episode_ids(client, episode_ids, batch_size, action_code=SYNC_ACTION)
-
-
-def _latest_syncs_for_movie_ids(
-    client: BazarrClient, movie_ids: Iterable[int], batch_size: int
-) -> dict[int, datetime]:
-    return _latest_actions_for_movie_ids(client, movie_ids, batch_size, action_code=SYNC_ACTION)
 
 
 def _as_datetime(value: date | datetime) -> datetime:

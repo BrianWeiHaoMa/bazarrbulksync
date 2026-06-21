@@ -10,6 +10,7 @@ from bazarrbulksync.config import DEFAULT_LOG_FILE_PATH, effective_log_file_path
 from bazarrbulksync.models import (
     ACTION_HISTORY_CODES,
     MOD_ACTIONS,
+    DeleteOptions,
     PatchAction,
     PatchOptions,
     Subtitle,
@@ -219,6 +220,7 @@ def test_patch_action_enum_values() -> None:
 def test_action_history_codes_mapping() -> None:
     assert ACTION_HISTORY_CODES["sync"] == 5
     assert ACTION_HISTORY_CODES["translate"] == 6
+    assert ACTION_HISTORY_CODES["delete"] == 0
     for mod in MOD_ACTIONS:
         assert ACTION_HISTORY_CODES[mod] is None
 
@@ -226,9 +228,11 @@ def test_action_history_codes_mapping() -> None:
 def test_action_has_history_and_code() -> None:
     assert action_has_history("sync") is True
     assert action_has_history("translate") is True
+    assert action_has_history("delete") is True
     assert action_has_history("remove_HI") is False
     assert action_has_history("OCR_fixes") is False
     assert action_history_code("translate") == 6
+    assert action_history_code("delete") == 0
     assert action_history_code("remove_HI") is None
     assert action_history_code("nonexistent") is None
 
@@ -245,5 +249,46 @@ def test_patch_options_defaults_and_helpers() -> None:
     assert opts.hi_for(sub) is False
 
     opts_override = PatchOptions(forced=False, hi=True)
+    assert opts_override.forced_for(sub) is False
+    assert opts_override.hi_for(sub) is True
+
+
+def test_config_parses_delete_options() -> None:
+    config = parse_config(
+        {
+            "base_url": "http://bazarr.local/",
+            "api_key": "secret",
+            "delete": {
+                "language": "ja",
+                "forced": True,
+                "hi": False,
+            },
+        }
+    )
+
+    assert config.delete_options.language == "ja"
+    assert config.delete_options.forced is True
+    assert config.delete_options.hi is False
+
+
+def test_config_delete_options_default_when_absent() -> None:
+    config = parse_config({"base_url": "http://bazarr.local/", "api_key": "secret"})
+
+    assert config.delete_options.language is None
+    assert config.delete_options.forced is None
+    assert config.delete_options.hi is None
+
+
+def test_delete_options_defaults_and_helpers() -> None:
+    opts = DeleteOptions()
+    assert opts.language is None
+    assert opts.forced is None
+    assert opts.hi is None
+
+    sub = Subtitle("English", "en", "eng", "/m.en.srt", forced=True, hi=False)
+    assert opts.forced_for(sub) is True
+    assert opts.hi_for(sub) is False
+
+    opts_override = DeleteOptions(forced=False, hi=True)
     assert opts_override.forced_for(sub) is False
     assert opts_override.hi_for(sub) is True

@@ -14,8 +14,9 @@ movies_chunk_size: 3000
 # fetch all the episodes in an entire series at a time).
 episodes_chunk_size: 6000
 
-# For `sync before`: how many distinct episode or movie IDs to process per
-# batch when querying Bazarr history (one history API call per ID).
+# For `sync before`, `patch before`, and `delete before`: how many distinct
+# episode or movie IDs to process per batch when querying Bazarr history
+# (one history API call per ID).
 before_history_batch_size: 3000
 
 timeout_seconds: 60
@@ -64,3 +65,12 @@ patch:
   # Blank means use Bazarr's default behaviour. Set true or false to control.
   original_format:
 
+delete:
+  # Blank means delete every local subtitle language. Set "en", "ja", etc. to filter.
+  language:
+
+  # Blank uses each subtitle's own forced/hearing-impaired flags to identify
+  # it in Bazarr's DELETE API. Set true or false to only delete subtitles
+  # matching those specific flag values.
+  forced:
+  hi:

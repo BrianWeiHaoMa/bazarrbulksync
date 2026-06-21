@@ -8,6 +8,7 @@ from typing import Any
 
 SYNC_ACTION = 5
 TRANSLATE_ACTION = 6
+DELETE_ACTION = 0
 
 
 class PatchAction(StrEnum):
@@ -27,6 +28,7 @@ class BeforePatchAction(StrEnum):
 ACTION_HISTORY_CODES: dict[str, int | None] = {
     "sync": SYNC_ACTION,
     "translate": TRANSLATE_ACTION,
+    "delete": DELETE_ACTION,
     "remove_HI": None,
     "remove_tags": None,
     "OCR_fixes": None,
@@ -196,6 +198,19 @@ class PatchOptions:
 
 
 @dataclass(frozen=True)
+class DeleteOptions:
+    language: str | None = None
+    forced: bool | None = None
+    hi: bool | None = None
+
+    def forced_for(self, subtitle: Subtitle) -> bool:
+        return subtitle.forced if self.forced is None else self.forced
+
+    def hi_for(self, subtitle: Subtitle) -> bool:
+        return subtitle.hi if self.hi is None else self.hi
+
+
+@dataclass(frozen=True)
 class SyncJob:
     item_type: ItemType
     item_id: int
@@ -203,6 +218,7 @@ class SyncJob:
     subtitle: Subtitle
     season: int | None = None
     episode: int | None = None
+    series_id: int | None = None
 
     @property
     def display_name(self) -> str:
@@ -273,7 +289,7 @@ def parse_bazarr_datetime(value: str | None) -> datetime | None:
 
 
 def parse_before_argument(value: str) -> datetime:
-    """Parse ``sync before`` threshold from the CLI (naive local).
+    """Parse ``before`` threshold from the CLI (naive local).
 
     Accepts an ISO calendar date or a date with time in the formats 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'.
     Returns a naive local datetime object.

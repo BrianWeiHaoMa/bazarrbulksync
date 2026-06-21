@@ -5,10 +5,11 @@ from pathlib import Path
 from urllib.parse import parse_qs
 
 import httpx
+import pytest
 
 from bazarrbulksync.client import BazarrClient
 from bazarrbulksync.config import AppConfig
-from bazarrbulksync.models import ItemType, PatchOptions, Subtitle, SyncOptions
+from bazarrbulksync.models import DeleteOptions, ItemType, PatchOptions, Subtitle, SyncOptions
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -177,4 +178,92 @@ def test_get_series_and_movies_use_id_array_params() -> None:
 
     client.get_movies([20])
     assert captured["radarrid[]"] == ["20"]
+
+
+def test_delete_subtitle_movie_uses_movies_endpoint() -> None:
+    captured: dict[str, list[str]] = {}
+    captured_method: list[str] = []
+    captured_path: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_method.append(request.method)
+        captured_path.append(request.url.path)
+        captured.update(parse_qs(request.url.query.decode()))
+        return httpx.Response(204)
+
+    client = BazarrClient(AppConfig(base_url="http://bazarr", api_key="secret"), transport=httpx.MockTransport(handler))
+    subtitle = Subtitle(name="English", code2="en", code3="eng", path="/media/movie.en.srt", forced=False, hi=True)
+
+    client.delete_subtitle(
+        item_type=ItemType.MOVIE,
+        item_id=3,
+        subtitle=subtitle,
+        options=DeleteOptions(),
+    )
+
+    assert captured_method == ["DELETE"]
+    assert captured_path == ["/api/movies/subtitles"]
+    assert captured["radarrid"] == ["3"]
+    assert captured["language"] == ["en"]
+    assert captured["forced"] == ["False"]
+    assert captured["hi"] == ["True"]
+    assert captured["path"] == ["/media/movie.en.srt"]
+
+
+def test_delete_subtitle_episode_uses_episodes_endpoint() -> None:
+    captured: dict[str, list[str]] = {}
+    captured_method: list[str] = []
+    captured_path: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_method.append(request.method)
+        captured_path.append(request.url.path)
+        captured.update(parse_qs(request.url.query.decode()))
+        return httpx.Response(204)
+
+    client = BazarrClient(AppConfig(base_url="http://bazarr", api_key="secret"), transport=httpx.MockTransport(handler))
+    subtitle = Subtitle(name="English", code2="en", code3="eng", path="/media/ep.en.srt", forced=True, hi=False)
+
+    client.delete_subtitle(
+        item_type=ItemType.EPISODE,
+        item_id=10,
+        subtitle=subtitle,
+        options=DeleteOptions(language="ja"),
+        series_id=20,
+    )
+
+    assert captured_method == ["DELETE"]
+    assert captured_path == ["/api/episodes/subtitles"]
+    assert captured["seriesid"] == ["20"]
+    assert captured["episodeid"] == ["10"]
+    assert captured["language"] == ["ja"]
+    assert captured["forced"] == ["True"]
+    assert captured["hi"] == ["False"]
+    assert captured["path"] == ["/media/ep.en.srt"]
+
+
+def test_delete_subtitle_episode_without_series_id_raises() -> None:
+    client = BazarrClient(AppConfig(base_url="http://bazarr", api_key="secret"), transport=httpx.MockTransport(lambda r: httpx.Response(204)))
+    subtitle = Subtitle(name="English", code2="en", code3="eng", path="/media/ep.en.srt")
+
+    with pytest.raises(ValueError, match="series_id"):
+        client.delete_subtitle(
+            item_type=ItemType.EPISODE,
+            item_id=10,
+            subtitle=subtitle,
+            options=DeleteOptions(),
+        )
+
+
+def test_delete_subtitle_without_path_raises() -> None:
+    client = BazarrClient(AppConfig(base_url="http://bazarr", api_key="secret"), transport=httpx.MockTransport(lambda r: httpx.Response(204)))
+    subtitle = Subtitle(name="English", code2="en", code3="eng", path=None)
+
+    with pytest.raises(ValueError, match="path"):
+        client.delete_subtitle(
+            item_type=ItemType.MOVIE,
+            item_id=3,
+            subtitle=subtitle,
+            options=DeleteOptions(),
+        )
 

@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from .config import AppConfig
-from .models import Episode, HistoryEvent, ItemType, Movie, PatchOptions, Series, Subtitle, SyncOptions
+from .models import DeleteOptions, Episode, HistoryEvent, ItemType, Movie, PatchOptions, Series, Subtitle, SyncOptions
 from .util import unique_in_order
 
 logger = logging.getLogger(__name__)
@@ -158,6 +158,54 @@ class BazarrClient:
         )
         self._request("PATCH", "subtitles", data=payload, expected_status={204})
         logger.info("PATCH subtitles ok action=%s type=%s id=%s path=%s", action, item_type.value, item_id, subtitle.path)
+
+    def delete_subtitle(
+        self,
+        *,
+        item_type: ItemType,
+        item_id: int,
+        subtitle: Subtitle,
+        options: DeleteOptions,
+        series_id: int | None = None,
+    ) -> None:
+        if not subtitle.path:
+            raise ValueError("Cannot delete a subtitle without a path")
+
+        language = options.language or subtitle.code2
+        forced = _bazarr_bool(options.forced_for(subtitle))
+        hi = _bazarr_bool(options.hi_for(subtitle))
+
+        if item_type == ItemType.MOVIE:
+            params: list[tuple[str, str]] = [
+                ("radarrid", str(item_id)),
+                ("language", language),
+                ("forced", forced),
+                ("hi", hi),
+                ("path", subtitle.path),
+            ]
+            endpoint = "movies/subtitles"
+        else:
+            if series_id is None:
+                raise ValueError("Episode delete requires series_id")
+            params = [
+                ("seriesid", str(series_id)),
+                ("episodeid", str(item_id)),
+                ("language", language),
+                ("forced", forced),
+                ("hi", hi),
+                ("path", subtitle.path),
+            ]
+            endpoint = "episodes/subtitles"
+
+        logger.debug(
+            "delete_subtitle type=%s id=%s language=%s path=%s",
+            item_type.value,
+            item_id,
+            language,
+            subtitle.path,
+        )
+        self._request("DELETE", endpoint, params=params, expected_status={204})
+        logger.info("DELETE %s ok type=%s id=%s path=%s", endpoint, item_type.value, item_id, subtitle.path)
 
     def _iter_paginated(self, path: str, chunk_size: int) -> Iterator[list[dict[str, Any]]]:
         start = 0

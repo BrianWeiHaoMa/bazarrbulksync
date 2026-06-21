@@ -1,4 +1,4 @@
-"""Optional file logging for sync debugging."""
+"""Optional file logging for debugging."""
 
 from __future__ import annotations
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from bazarrbulksync.config import AppConfig
-from bazarrbulksync.engine import PatchEngine, SyncEngine
+from bazarrbulksync.engine import DeleteEngine, PatchEngine, SyncEngine
 from bazarrbulksync.models import (
+    DeleteOptions,
     Episode,
     HistoryEvent,
     ItemType,
@@ -60,9 +61,11 @@ def test_jobs_for_series_and_movies_use_media_ids() -> None:
 
     assert episode_jobs[0].item_type == ItemType.EPISODE
     assert episode_jobs[0].item_id == 10
+    assert episode_jobs[0].series_id == 20
     assert episode_jobs[0].display_name == "Series S01E01"
     assert movie_jobs[0].item_type == ItemType.MOVIE
     assert movie_jobs[0].item_id == 30
+    assert movie_jobs[0].series_id is None
 
 
 def test_latest_syncs_only_tracks_action_five() -> None:
@@ -516,4 +519,99 @@ def test_iter_before_jobs_from_jobs_filters_by_episode_history() -> None:
 
     assert [j.item_id for j in jobs] == [1]
     assert sorted(client.episode_history_calls) == [1, 2]
+
+
+def test_delete_engine_dry_run_reports_without_calling_client() -> None:
+    class NoopClient:
+        def delete_subtitle(self, **kwargs: object) -> None:
+            raise AssertionError("dry-run should not call Bazarr")
+
+    movie = Movie(
+        radarr_id=30,
+        title="Movie",
+        subtitles=(Subtitle("English", "en", "eng", "/media/movie.en.srt"),),
+    )
+    jobs = list(jobs_for_movie(movie, SyncOptions()))
+
+    summary = DeleteEngine(NoopClient()).run(jobs, options=DeleteOptions(), dry_run=True)
+
+    assert summary.dry_run == 1
+    assert summary.failed == 0
+
+
+def test_delete_engine_calls_delete_subtitle() -> None:
+    class FakeClient:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        def delete_subtitle(self, **kwargs) -> None:
+            self.calls.append(kwargs)
+
+    movie = Movie(
+        radarr_id=30,
+        title="Movie",
+        subtitles=(Subtitle("English", "en", "eng", "/media/movie.en.srt"),),
+    )
+    jobs = list(jobs_for_movie(movie, SyncOptions()))
+
+    client = FakeClient()
+    summary = DeleteEngine(client).run(jobs, options=DeleteOptions())
+
+    assert summary.synced == 1
+    assert len(client.calls) == 1
+    assert client.calls[0]["item_type"] == ItemType.MOVIE
+    assert client.calls[0]["item_id"] == 30
+
+
+def test_delete_engine_episode_passes_series_id() -> None:
+    class FakeClient:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        def delete_subtitle(self, **kwargs) -> None:
+            self.calls.append(kwargs)
+
+    episode = Episode(
+        sonarr_episode_id=10,
+        sonarr_series_id=20,
+        title="Pilot",
+        season=1,
+        episode=1,
+        subtitles=(Subtitle("English", "en", "eng", "/media/pilot.en.srt"),),
+    )
+    jobs = list(jobs_for_episodes([episode], SyncOptions()))
+
+    client = FakeClient()
+    summary = DeleteEngine(client).run(jobs, options=DeleteOptions())
+
+    assert summary.synced == 1
+    assert client.calls[0]["series_id"] == 20
+
+
+def test_delete_engine_skips_pathless_subtitle() -> None:
+    class FakeClient:
+        def delete_subtitle(self, **kwargs: object) -> None:
+            raise AssertionError("should not call Bazarr for pathless subtitle")
+
+    sub = Subtitle("English", "en", "eng", None)
+    job = SyncJob(ItemType.MOVIE, 1, "Movie", sub)
+
+    summary = DeleteEngine(FakeClient()).run([job], options=DeleteOptions())
+
+    assert summary.skipped == 1
+    assert summary.synced == 0
+
+
+def test_delete_engine_fails_episode_without_series_id() -> None:
+    class FakeClient:
+        def delete_subtitle(self, **kwargs: object) -> None:
+            raise AssertionError("should not call Bazarr for missing series_id")
+
+    sub = Subtitle("English", "en", "eng", "/media/ep.en.srt")
+    job = SyncJob(ItemType.EPISODE, 10, "Show", sub, season=1, episode=1, series_id=None)
+
+    summary = DeleteEngine(FakeClient()).run([job], options=DeleteOptions())
+
+    assert summary.failed == 1
+    assert summary.synced == 0
 

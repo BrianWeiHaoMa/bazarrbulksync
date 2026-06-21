@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-from .models import MediaType, PatchOptions, SyncOptions
+from .models import DeleteOptions, MediaType, PatchOptions, SyncOptions
 
 
 DEFAULT_CONFIG_PATH = Path("./bazarrbulksync/bazarrbulksync_config.yml")
@@ -30,6 +30,7 @@ class AppConfig:
     log_debug: bool = False
     sync_options: SyncOptions = SyncOptions()
     patch_options: PatchOptions = PatchOptions()
+    delete_options: DeleteOptions = DeleteOptions()
 
     @property
     def api_url(self) -> str:
@@ -45,6 +46,7 @@ class AppConfig:
         media_type: MediaType | None = None,
         sync_options: SyncOptions | None = None,
         patch_options: PatchOptions | None = None,
+        delete_options: DeleteOptions | None = None,
     ) -> AppConfig:
         return replace(
             self,
@@ -59,6 +61,7 @@ class AppConfig:
             media_type=media_type if media_type is not None else self.media_type,
             sync_options=sync_options or self.sync_options,
             patch_options=patch_options or self.patch_options,
+            delete_options=delete_options or self.delete_options,
         )
 
 
@@ -102,6 +105,10 @@ def parse_config(raw: dict[str, Any]) -> AppConfig:
     if not isinstance(patch_raw, dict):
         raise ValueError("Config value 'patch' must be a mapping")
 
+    delete_raw = raw.get("delete") or {}
+    if not isinstance(delete_raw, dict):
+        raise ValueError("Config value 'delete' must be a mapping")
+
     media_type = MediaType(str(raw.get("media_type", MediaType.ALL.value)))
     return AppConfig(
         base_url=base_url.rstrip("/"),
@@ -133,6 +140,11 @@ def parse_config(raw: dict[str, Any]) -> AppConfig:
             forced=_optional_bool(patch_raw.get("forced")),
             hi=_optional_bool(patch_raw.get("hi")),
             original_format=_optional_bool(patch_raw.get("original_format")),
+        ),
+        delete_options=DeleteOptions(
+            language=_optional_str(delete_raw.get("language")),
+            forced=_optional_bool(delete_raw.get("forced")),
+            hi=_optional_bool(delete_raw.get("hi")),
         ),
         )
 

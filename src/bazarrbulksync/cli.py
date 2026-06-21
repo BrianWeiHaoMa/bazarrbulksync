@@ -22,11 +22,13 @@ from rich.table import Table
 
 from .client import BazarrClient
 from .config import AppConfig, DEFAULT_LOG_FILE_PATH, load_config, merge_sync_options
-from .engine import PatchEngine, SyncEngine
+from .engine import DeleteEngine, PatchEngine, SyncEngine
 from .logging_setup import setup_sync_logging, teardown_sync_logging
 from .models import (
     MOD_ACTIONS,
     BeforePatchAction,
+    DELETE_ACTION,
+    DeleteOptions,
     MediaType,
     PatchAction,
     PatchOptions,
@@ -44,6 +46,8 @@ sync_app = typer.Typer(help="Run bulk subtitle synchronization.")
 app.add_typer(sync_app, name="sync")
 patch_app = typer.Typer(help="Run bulk subtitle patch actions (non-sync).")
 app.add_typer(patch_app, name="patch")
+delete_app = typer.Typer(help="Run bulk subtitle deletion of external subtitle files.")
+app.add_typer(delete_app, name="delete")
 console = Console()
 
 
@@ -856,6 +860,307 @@ def _print_patch_summary(summary: SyncSummary, *, action: str) -> None:
     table.add_column("Status")
     table.add_column("Count", justify="right")
     table.add_row("Applied", str(summary.synced))
+    table.add_row("Dry run", str(summary.dry_run))
+    table.add_row("Skipped", str(summary.skipped))
+    table.add_row("Failed", str(summary.failed))
+    table.add_row("Total", str(summary.total))
+    console.print(table)
+
+    failures = [result for result in summary.results if result.status == "failed"]
+    for result in failures[:10]:
+        console.print(f"[red]FAILED[/red] {result.job.display_name}: {result.message}")
+    if len(failures) > 10:
+        console.print(f"[red]...and {len(failures) - 10} more failures[/red]")
+
+
+@delete_app.command("all", help="Delete all external subtitles without date/datetime restriction.")
+def delete_all(
+    config_path: ConfigOption = None,
+    series_chunk_size: SeriesChunkOption = None,
+    movies_chunk_size: MoviesChunkOption = None,
+    episodes_chunk_size: EpisodesChunkOption = None,
+    series_ids: SeriesIdsOption = None,
+    movie_ids: MovieIdsOption = None,
+    episode_ids: EpisodeIdsOption = None,
+    media_type: MediaTypeOption = MediaType.ALL,
+    language: LanguageOption = None,
+    forced: ForcedOption = None,
+    hi: HiOption = None,
+    dry_run: DryRunOption = False,
+    yes: YesOption = False,
+    log: LogOption = None,
+    log_file: LogFileOption = None,
+    log_debug: LogDebugOption = None,
+) -> None:
+    config, options = _load_delete_runtime(
+        config_path,
+        series_chunk_size=series_chunk_size,
+        movies_chunk_size=movies_chunk_size,
+        episodes_chunk_size=episodes_chunk_size,
+        media_type=media_type,
+        language=language,
+        forced=forced,
+        hi=hi,
+    )
+    s, m, e, use_ids = _cli_id_lists_for_sync(config.media_type, series_ids, movie_ids, episode_ids)
+    eff_log_file, eff_log_debug = _effective_log_settings(config, log=log, log_file=log_file, log_debug=log_debug)
+    with BazarrClient(config) as client:
+        planner = SyncPlanner(client)
+        if use_ids:
+            console.print("[cyan]Planning delete for the given Sonarr/Radarr IDs...[/cyan]")
+            jobs = planner.iter_jobs_for_ids(
+                series_ids=s,
+                movie_ids=m,
+                episode_ids=e,
+                options=options,
+                episodes_chunk_size=config.episodes_chunk_size,
+            )
+        else:
+            console.print(
+                "[cyan]Counting total number of external subtitle files to delete. This should take only a few seconds...[/cyan]"
+            )
+            jobs = planner.iter_all_jobs(
+                media_type=config.media_type,
+                series_chunk_size=config.series_chunk_size,
+                movies_chunk_size=config.movies_chunk_size,
+                episodes_chunk_size=config.episodes_chunk_size,
+                options=options,
+            )
+        run_params = _build_run_params(
+            "delete all",
+            config,
+            dry_run=dry_run,
+            yes=yes,
+            series_ids=s or None,
+            movie_ids=m or None,
+            episode_ids=e or None,
+            language=options.language,
+            forced=options.forced,
+            hi=options.hi,
+        )
+        _run_delete_jobs(
+            client,
+            jobs,
+            options=options,
+            dry_run=dry_run,
+            yes=yes,
+            log_file=eff_log_file,
+            log_debug=eff_log_debug,
+            run_params=run_params,
+        )
+
+
+@delete_app.command(
+    "before",
+    help="Only delete subtitles whose media was last deleted before a given date/datetime.",
+)
+def delete_before(
+    before: Annotated[
+        str,
+        typer.Argument(
+            help=(
+                "Only include media whose last Bazarr delete is strictly before this instant (date or datetime), "
+                "e.g. 2025-09-01 or '2025-09-01 14:30:00'."
+            ),
+        ),
+    ],
+    config_path: ConfigOption = None,
+    series_chunk_size: SeriesChunkOption = None,
+    movies_chunk_size: MoviesChunkOption = None,
+    episodes_chunk_size: EpisodesChunkOption = None,
+    series_ids: SeriesIdsOption = None,
+    movie_ids: MovieIdsOption = None,
+    episode_ids: EpisodeIdsOption = None,
+    before_history_batch_size: BeforeHistoryBatchOption = None,
+    media_type: MediaTypeOption = MediaType.ALL,
+    language: LanguageOption = None,
+    forced: ForcedOption = None,
+    hi: HiOption = None,
+    dry_run: DryRunOption = False,
+    yes: YesOption = False,
+    log: LogOption = None,
+    log_file: LogFileOption = None,
+    log_debug: LogDebugOption = None,
+) -> None:
+    try:
+        threshold = parse_before_argument(before)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    action_code = action_history_code("delete")
+    config, options = _load_delete_runtime(
+        config_path,
+        series_chunk_size=series_chunk_size,
+        movies_chunk_size=movies_chunk_size,
+        episodes_chunk_size=episodes_chunk_size,
+        before_history_batch_size=before_history_batch_size,
+        media_type=media_type,
+        language=language,
+        forced=forced,
+        hi=hi,
+    )
+    s, m, e, use_ids = _cli_id_lists_for_sync(config.media_type, series_ids, movie_ids, episode_ids)
+    eff_log_file, eff_log_debug = _effective_log_settings(config, log=log, log_file=log_file, log_debug=log_debug)
+    with BazarrClient(config) as client:
+        planner = SyncPlanner(client)
+        if use_ids:
+            console.print(
+                f"[cyan]Finding subtitle files for the given IDs whose last delete was before "
+                f"{threshold.strftime('%Y-%m-%d %H:%M:%S')}...[/cyan]"
+            )
+            id_jobs = list(
+                planner.iter_jobs_for_ids(
+                    series_ids=s,
+                    movie_ids=m,
+                    episode_ids=e,
+                    options=options,
+                    episodes_chunk_size=config.episodes_chunk_size,
+                )
+            )
+            jobs = planner.iter_before_jobs_from_jobs(
+                threshold,
+                id_jobs,
+                history_lookup_batch_size=before_history_batch_size,
+                action_code=action_code,
+            )
+        else:
+            console.print(
+                f"[cyan]Finding all subtitle files whose last delete was before "
+                f"{threshold.strftime('%Y-%m-%d %H:%M:%S')}. On large libraries, this could take a few minutes...[/cyan]"
+            )
+            episode_item_ids, movie_item_ids = planner.collect_job_item_ids(
+                media_type=config.media_type,
+                series_chunk_size=config.series_chunk_size,
+                movies_chunk_size=config.movies_chunk_size,
+                episodes_chunk_size=config.episodes_chunk_size,
+                options=options,
+            )
+            jobs = planner.iter_before_jobs(
+                threshold,
+                episode_item_ids,
+                movie_item_ids,
+                media_type=config.media_type,
+                series_chunk_size=config.series_chunk_size,
+                movies_chunk_size=config.movies_chunk_size,
+                episodes_chunk_size=config.episodes_chunk_size,
+                options=options,
+                history_lookup_batch_size=before_history_batch_size,
+                action_code=action_code,
+            )
+        run_params = _build_run_params(
+            f"delete before {threshold.strftime('%Y-%m-%d %H:%M:%S')}",
+            config,
+            dry_run=dry_run,
+            yes=yes,
+            series_ids=s or None,
+            movie_ids=m or None,
+            episode_ids=e or None,
+            language=options.language,
+            forced=options.forced,
+            hi=options.hi,
+        )
+        _run_delete_jobs(
+            client,
+            jobs,
+            options=options,
+            dry_run=dry_run,
+            yes=yes,
+            log_file=eff_log_file,
+            log_debug=eff_log_debug,
+            run_params=run_params,
+        )
+
+
+def _load_delete_runtime(
+    config_path: Path | None,
+    *,
+    series_chunk_size: int | None,
+    movies_chunk_size: int | None,
+    episodes_chunk_size: int | None,
+    before_history_batch_size: int | None = None,
+    media_type: MediaType,
+    language: str | None,
+    forced: bool | None,
+    hi: bool | None,
+) -> tuple[AppConfig, DeleteOptions]:
+    config = load_config(config_path)
+    base = config.delete_options
+    overrides: dict[str, object] = {}
+    if language is not None:
+        overrides["language"] = language
+    if forced is not None:
+        overrides["forced"] = forced
+    if hi is not None:
+        overrides["hi"] = hi
+    options = _replace(base, **overrides)
+    return (
+        config.with_overrides(
+            series_chunk_size=series_chunk_size,
+            movies_chunk_size=movies_chunk_size,
+            episodes_chunk_size=episodes_chunk_size,
+            before_history_batch_size=before_history_batch_size,
+            media_type=media_type,
+        ),
+        options,
+    )
+
+
+def _run_delete_jobs(
+    client: BazarrClient,
+    jobs: Iterable[SyncJob],
+    *,
+    options: DeleteOptions,
+    dry_run: bool,
+    yes: bool,
+    log_file: Path | None = None,
+    log_debug: bool = False,
+    run_params: dict[str, Any] | None = None,
+) -> None:
+    setup_sync_logging(log_file, debug=log_debug)
+    _log_run_params(run_params)
+    try:
+        job_list = list(jobs)
+        if not job_list:
+            console.print("[yellow]No local subtitle files matched the request.[/yellow]")
+            return
+
+        verb = "dry-run delete" if dry_run else "delete"
+        if not dry_run and not yes and sys.stdin.isatty():
+            typer.confirm(f"About to {verb} {len(job_list)} subtitle files. Continue?", abort=True)
+
+        console.print(f"[cyan]Deleting {len(job_list)} subtitles now...[/cyan]")
+        engine = DeleteEngine(client)
+        if sys.stdout.isatty():
+            with Progress(
+                TimeElapsedColumn(),
+                SpinnerColumn(),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TaskProgressColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task_id = progress.add_task("Deleting subtitles", total=len(job_list))
+
+                def update(event: SyncProgress) -> None:
+                    description = "Finished: " + event.job.display_name if event.job else "Deleting subtitles"
+                    progress.update(task_id, completed=event.completed, description=description)
+
+                summary = engine.run(job_list, options=options, dry_run=dry_run, progress=update, total=len(job_list))
+        else:
+            summary = engine.run(job_list, options=options, dry_run=dry_run, total=len(job_list))
+
+        _print_delete_summary(summary)
+        if summary.failed:
+            raise typer.Exit(1)
+    finally:
+        teardown_sync_logging()
+
+
+def _print_delete_summary(summary: SyncSummary) -> None:
+    table = Table(title="Bazarr Bulk Delete Summary")
+    table.add_column("Status")
+    table.add_column("Count", justify="right")
+    table.add_row("Deleted", str(summary.synced))
     table.add_row("Dry run", str(summary.dry_run))
     table.add_row("Skipped", str(summary.skipped))
     table.add_row("Failed", str(summary.failed))
