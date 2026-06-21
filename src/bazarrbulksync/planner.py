@@ -85,23 +85,24 @@ class SyncPlanner:
         episodes_chunk_size: int | None = None,
         options: SyncOptions = SyncOptions(),
         history_lookup_batch_size: int | None = None,
+        action_code: int = SYNC_ACTION,
     ) -> Iterator[SyncJob]:
-        logger.info("Planning before jobs threshold=%s media_type=%s", before, media_type.value)
+        logger.info("Planning before jobs threshold=%s media_type=%s action_code=%s", before, media_type.value, action_code)
         threshold = _as_datetime(before)
         batch = history_lookup_batch_size or self.client.config.before_history_batch_size
         if batch <= 0:
             raise ValueError("history_lookup_batch_size must be positive")
 
-        episode_syncs: dict[int, datetime] = {}
-        movie_syncs: dict[int, datetime] = {}
+        episode_actions: dict[int, datetime] = {}
+        movie_actions: dict[int, datetime] = {}
 
         if media_type in {MediaType.SERIES, MediaType.ALL}:
-            episode_syncs = _latest_syncs_for_episode_ids(self.client, episode_ids, batch)
-            logger.debug("Episode history latest sync entries=%s", len(episode_syncs))
+            episode_actions = _latest_actions_for_episode_ids(self.client, episode_ids, batch, action_code=action_code)
+            logger.debug("Episode history latest action entries=%s action_code=%s", len(episode_actions), action_code)
 
         if media_type in {MediaType.MOVIES, MediaType.ALL}:
-            movie_syncs = _latest_syncs_for_movie_ids(self.client, movie_ids, batch)
-            logger.debug("Movie history latest sync entries=%s", len(movie_syncs))
+            movie_actions = _latest_actions_for_movie_ids(self.client, movie_ids, batch, action_code=action_code)
+            logger.debug("Movie history latest action entries=%s action_code=%s", len(movie_actions), action_code)
 
         for job in self.iter_all_jobs(
             media_type=media_type,
@@ -110,7 +111,7 @@ class SyncPlanner:
             episodes_chunk_size=episodes_chunk_size,
             options=options,
         ):
-            latest = episode_syncs.get(job.item_id) if job.item_type == ItemType.EPISODE else movie_syncs.get(job.item_id)
+            latest = episode_actions.get(job.item_id) if job.item_type == ItemType.EPISODE else movie_actions.get(job.item_id)
             if latest is None or latest < threshold:
                 yield job
 
@@ -120,9 +121,11 @@ class SyncPlanner:
         jobs: Iterable[SyncJob],
         *,
         history_lookup_batch_size: int | None = None,
+        action_code: int = SYNC_ACTION,
     ) -> Iterator[SyncJob]:
         """Like :meth:`iter_before_jobs`, but only considers the given jobs (e.g. from explicit IDs)."""
 
+        logger.info("Planning before jobs from given IDs threshold=%s action_code=%s", before, action_code)
         job_list = list(jobs)
         threshold = _as_datetime(before)
         batch = history_lookup_batch_size or self.client.config.before_history_batch_size
@@ -132,18 +135,18 @@ class SyncPlanner:
         episode_item_ids = unique_in_order(job.item_id for job in job_list if job.item_type == ItemType.EPISODE)
         movie_item_ids = unique_in_order(job.item_id for job in job_list if job.item_type == ItemType.MOVIE)
 
-        episode_syncs: dict[int, datetime] = {}
-        movie_syncs: dict[int, datetime] = {}
+        episode_actions: dict[int, datetime] = {}
+        movie_actions: dict[int, datetime] = {}
 
         if episode_item_ids:
-            episode_syncs = _latest_syncs_for_episode_ids(self.client, episode_item_ids, batch)
-            logger.debug("Episode history latest sync entries=%s", len(episode_syncs))
+            episode_actions = _latest_actions_for_episode_ids(self.client, episode_item_ids, batch, action_code=action_code)
+            logger.debug("Episode history latest action entries=%s action_code=%s", len(episode_actions), action_code)
         if movie_item_ids:
-            movie_syncs = _latest_syncs_for_movie_ids(self.client, movie_item_ids, batch)
-            logger.debug("Movie history latest sync entries=%s", len(movie_syncs))
+            movie_actions = _latest_actions_for_movie_ids(self.client, movie_item_ids, batch, action_code=action_code)
+            logger.debug("Movie history latest action entries=%s action_code=%s", len(movie_actions), action_code)
 
         for job in job_list:
-            latest = episode_syncs.get(job.item_id) if job.item_type == ItemType.EPISODE else movie_syncs.get(job.item_id)
+            latest = episode_actions.get(job.item_id) if job.item_type == ItemType.EPISODE else movie_actions.get(job.item_id)
             if latest is None or latest < threshold:
                 yield job
 
@@ -282,15 +285,19 @@ def chunk_series_for_episode_requests(series: Iterable[Series], episode_limit: i
         yield batch
 
 
-def latest_syncs(events: Iterable[HistoryEvent]) -> dict[int, datetime]:
+def latest_actions(events: Iterable[HistoryEvent], action_code: int = SYNC_ACTION) -> dict[int, datetime]:
     latest: dict[int, datetime] = {}
     for event in events:
-        if event.action != SYNC_ACTION or event.parsed_timestamp is None:
+        if event.action != action_code or event.parsed_timestamp is None:
             continue
         current = latest.get(event.item_id)
         if current is None or event.parsed_timestamp > current:
             latest[event.item_id] = event.parsed_timestamp
     return latest
+
+
+def latest_syncs(events: Iterable[HistoryEvent]) -> dict[int, datetime]:
+    return latest_actions(events, action_code=SYNC_ACTION)
 
 
 def _merge_latest_sync_maps(into: dict[int, datetime], new: dict[int, datetime]) -> None:
@@ -299,24 +306,42 @@ def _merge_latest_sync_maps(into: dict[int, datetime], new: dict[int, datetime])
         into[item_id] = ts if current is None else max(current, ts)
 
 
-def _latest_syncs_for_episode_ids(client: BazarrClient, episode_ids: Iterable[int], batch_size: int) -> dict[int, datetime]:
+def _latest_actions_for_episode_ids(
+    client: BazarrClient, episode_ids: Iterable[int], batch_size: int, action_code: int = SYNC_ACTION
+) -> dict[int, datetime]:
     unique = unique_in_order(episode_ids)
+    logger.debug("Fetching episode history for %s IDs action_code=%s batch_size=%s", len(unique), action_code, batch_size)
     result: dict[int, datetime] = {}
     for i in range(0, len(unique), batch_size):
         for episode_id in unique[i : i + batch_size]:
             events = client.get_episode_history(episode_id=episode_id)
-            _merge_latest_sync_maps(result, latest_syncs(events))
+            _merge_latest_sync_maps(result, latest_actions(events, action_code=action_code))
     return result
 
 
-def _latest_syncs_for_movie_ids(client: BazarrClient, movie_ids: Iterable[int], batch_size: int) -> dict[int, datetime]:
+def _latest_actions_for_movie_ids(
+    client: BazarrClient, movie_ids: Iterable[int], batch_size: int, action_code: int = SYNC_ACTION
+) -> dict[int, datetime]:
     unique = unique_in_order(movie_ids)
+    logger.debug("Fetching movie history for %s IDs action_code=%s batch_size=%s", len(unique), action_code, batch_size)
     result: dict[int, datetime] = {}
     for i in range(0, len(unique), batch_size):
         for radarr_id in unique[i : i + batch_size]:
             events = client.get_movie_history(radarr_id=radarr_id)
-            _merge_latest_sync_maps(result, latest_syncs(events))
+            _merge_latest_sync_maps(result, latest_actions(events, action_code=action_code))
     return result
+
+
+def _latest_syncs_for_episode_ids(
+    client: BazarrClient, episode_ids: Iterable[int], batch_size: int
+) -> dict[int, datetime]:
+    return _latest_actions_for_episode_ids(client, episode_ids, batch_size, action_code=SYNC_ACTION)
+
+
+def _latest_syncs_for_movie_ids(
+    client: BazarrClient, movie_ids: Iterable[int], batch_size: int
+) -> dict[int, datetime]:
+    return _latest_actions_for_movie_ids(client, movie_ids, batch_size, action_code=SYNC_ACTION)
 
 
 def _as_datetime(value: date | datetime) -> datetime:

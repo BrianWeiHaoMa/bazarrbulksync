@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from bazarrbulksync.config import AppConfig
-from bazarrbulksync.engine import SyncEngine
+from bazarrbulksync.engine import PatchEngine, SyncEngine
 from bazarrbulksync.models import (
     Episode,
     HistoryEvent,
     ItemType,
     MediaType,
     Movie,
+    PatchOptions,
     Series,
     Subtitle,
     SyncJob,
@@ -21,6 +22,7 @@ from bazarrbulksync.planner import (
     eligible_subtitles,
     jobs_for_episodes,
     jobs_for_movie,
+    latest_actions,
     latest_syncs,
 )
 
@@ -73,6 +75,17 @@ def test_latest_syncs_only_tracks_action_five() -> None:
     assert latest_syncs(events)[3] == datetime(2025, 9, 3, 12, 0, 0)
 
 
+def test_latest_actions_filters_by_action_code() -> None:
+    events = [
+        HistoryEvent(ItemType.MOVIE, 3, 5, datetime(2025, 9, 1, 12, 0, 0)),
+        HistoryEvent(ItemType.MOVIE, 3, 6, datetime(2025, 9, 2, 12, 0, 0)),
+        HistoryEvent(ItemType.MOVIE, 3, 6, datetime(2025, 9, 3, 12, 0, 0)),
+    ]
+
+    assert latest_actions(events, action_code=6)[3] == datetime(2025, 9, 3, 12, 0, 0)
+    assert latest_actions(events, action_code=5)[3] == datetime(2025, 9, 1, 12, 0, 0)
+
+
 def test_engine_dry_run_reports_without_calling_client() -> None:
     class NoopClient:
         def sync_subtitle(self, **kwargs: object) -> None:
@@ -89,6 +102,51 @@ def test_engine_dry_run_reports_without_calling_client() -> None:
 
     assert summary.dry_run == 1
     assert summary.failed == 0
+
+
+def test_patch_engine_dry_run_reports_without_calling_client() -> None:
+    class NoopClient:
+        def patch_subtitle(self, **kwargs: object) -> None:
+            raise AssertionError("dry-run should not call Bazarr")
+
+    movie = Movie(
+        radarr_id=30,
+        title="Movie",
+        subtitles=(Subtitle("English", "en", "eng", "/media/movie.en.srt"),),
+    )
+    jobs = list(jobs_for_movie(movie, SyncOptions()))
+
+    summary = PatchEngine(NoopClient()).run(
+        jobs, action="translate", options=PatchOptions(language="ja"), dry_run=True
+    )
+
+    assert summary.dry_run == 1
+    assert summary.failed == 0
+
+
+def test_patch_engine_calls_patch_subtitle() -> None:
+    class FakeClient:
+        def __init__(self) -> None:
+            self.calls: list[dict] = []
+
+        def patch_subtitle(self, **kwargs) -> None:
+            self.calls.append(kwargs)
+
+    movie = Movie(
+        radarr_id=30,
+        title="Movie",
+        subtitles=(Subtitle("English", "en", "eng", "/media/movie.en.srt"),),
+    )
+    jobs = list(jobs_for_movie(movie, SyncOptions()))
+
+    client = FakeClient()
+    summary = PatchEngine(client).run(
+        jobs, action="remove_HI", options=PatchOptions()
+    )
+
+    assert summary.synced == 1
+    assert len(client.calls) == 1
+    assert client.calls[0]["action"] == "remove_HI"
 
 
 def test_chunk_series_for_episode_requests_respects_episode_limit() -> None:

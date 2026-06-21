@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from .config import AppConfig
-from .models import Episode, HistoryEvent, ItemType, Movie, Series, Subtitle, SyncOptions
+from .models import Episode, HistoryEvent, ItemType, Movie, PatchOptions, Series, Subtitle, SyncOptions
 from .util import unique_in_order
 
 logger = logging.getLogger(__name__)
@@ -123,6 +123,41 @@ class BazarrClient:
         )
         self._request("PATCH", "subtitles", data=payload, expected_status={204})
         logger.info("PATCH subtitles ok type=%s id=%s path=%s", item_type.value, item_id, subtitle.path)
+
+    def patch_subtitle(
+        self,
+        *,
+        action: str,
+        item_type: ItemType,
+        item_id: int,
+        subtitle: Subtitle,
+        options: PatchOptions,
+    ) -> None:
+        if not subtitle.path:
+            raise ValueError("Cannot patch a subtitle without a path")
+
+        payload: dict[str, str | int] = {
+            "action": action,
+            "language": options.language or subtitle.code2,
+            "path": subtitle.path,
+            "type": item_type.value,
+            "id": item_id,
+            "forced": _bazarr_bool(options.forced_for(subtitle)),
+            "hi": _bazarr_bool(options.hi_for(subtitle)),
+        }
+        if options.original_format is not None:
+            payload["original_format"] = _bazarr_bool(options.original_format)
+
+        logger.debug(
+            "patch_subtitle action=%s type=%s id=%s language=%s path=%s",
+            action,
+            item_type.value,
+            item_id,
+            payload.get("language"),
+            subtitle.path,
+        )
+        self._request("PATCH", "subtitles", data=payload, expected_status={204})
+        logger.info("PATCH subtitles ok action=%s type=%s id=%s path=%s", action, item_type.value, item_id, subtitle.path)
 
     def _iter_paginated(self, path: str, chunk_size: int) -> Iterator[list[dict[str, Any]]]:
         start = 0

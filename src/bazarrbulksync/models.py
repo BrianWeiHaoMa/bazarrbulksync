@@ -7,6 +7,50 @@ from typing import Any
 
 
 SYNC_ACTION = 5
+TRANSLATE_ACTION = 6
+
+
+class PatchAction(StrEnum):
+    TRANSLATE = "translate"
+    REMOVE_HI = "remove_HI"
+    REMOVE_TAGS = "remove_tags"
+    OCR_FIXES = "OCR_fixes"
+    COMMON = "common"
+    FIX_UPPERCASE = "fix_uppercase"
+    REVERSE_RTL = "reverse_rtl"
+
+
+class BeforePatchAction(StrEnum):
+    TRANSLATE = "translate"
+
+
+ACTION_HISTORY_CODES: dict[str, int | None] = {
+    "sync": SYNC_ACTION,
+    "translate": TRANSLATE_ACTION,
+    "remove_HI": None,
+    "remove_tags": None,
+    "OCR_fixes": None,
+    "common": None,
+    "fix_uppercase": None,
+    "reverse_rtl": None,
+}
+
+MOD_ACTIONS: frozenset[str] = frozenset({
+    "remove_HI",
+    "remove_tags",
+    "OCR_fixes",
+    "common",
+    "fix_uppercase",
+    "reverse_rtl",
+})
+
+
+def action_history_code(action: str) -> int | None:
+    return ACTION_HISTORY_CODES.get(action)
+
+
+def action_has_history(action: str) -> bool:
+    return action_history_code(action) is not None
 
 
 class MediaType(StrEnum):
@@ -129,6 +173,20 @@ class SyncOptions:
     no_fix_framerate: bool = False
     gss: bool = False
     reference: str | None = None
+
+    def forced_for(self, subtitle: Subtitle) -> bool:
+        return subtitle.forced if self.forced is None else self.forced
+
+    def hi_for(self, subtitle: Subtitle) -> bool:
+        return subtitle.hi if self.hi is None else self.hi
+
+
+@dataclass(frozen=True)
+class PatchOptions:
+    language: str | None = None
+    forced: bool | None = None
+    hi: bool | None = None
+    original_format: bool | None = None
 
     def forced_for(self, subtitle: Subtitle) -> bool:
         return subtitle.forced if self.forced is None else self.forced

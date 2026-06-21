@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-from .models import MediaType, SyncOptions
+from .models import MediaType, PatchOptions, SyncOptions
 
 
 DEFAULT_CONFIG_PATH = Path("./bazarrbulksync/bazarrbulksync_config.yml")
@@ -29,6 +29,7 @@ class AppConfig:
     log_file: Path | None = None
     log_debug: bool = False
     sync_options: SyncOptions = SyncOptions()
+    patch_options: PatchOptions = PatchOptions()
 
     @property
     def api_url(self) -> str:
@@ -43,6 +44,7 @@ class AppConfig:
         before_history_batch_size: int | None = None,
         media_type: MediaType | None = None,
         sync_options: SyncOptions | None = None,
+        patch_options: PatchOptions | None = None,
     ) -> AppConfig:
         return replace(
             self,
@@ -56,6 +58,7 @@ class AppConfig:
             ),
             media_type=media_type if media_type is not None else self.media_type,
             sync_options=sync_options or self.sync_options,
+            patch_options=patch_options or self.patch_options,
         )
 
 
@@ -95,6 +98,10 @@ def parse_config(raw: dict[str, Any]) -> AppConfig:
     if not isinstance(sync_raw, dict):
         raise ValueError("Config value 'sync' must be a mapping")
 
+    patch_raw = raw.get("patch") or {}
+    if not isinstance(patch_raw, dict):
+        raise ValueError("Config value 'patch' must be a mapping")
+
     media_type = MediaType(str(raw.get("media_type", MediaType.ALL.value)))
     return AppConfig(
         base_url=base_url.rstrip("/"),
@@ -120,6 +127,12 @@ def parse_config(raw: dict[str, Any]) -> AppConfig:
             no_fix_framerate=bool(sync_raw.get("no_fix_framerate", False)),
             gss=bool(sync_raw.get("gss", False)),
             reference=_optional_str(sync_raw.get("reference")),
+        ),
+        patch_options=PatchOptions(
+            language=_optional_str(patch_raw.get("language")),
+            forced=_optional_bool(patch_raw.get("forced")),
+            hi=_optional_bool(patch_raw.get("hi")),
+            original_format=_optional_bool(patch_raw.get("original_format")),
         ),
         )
 

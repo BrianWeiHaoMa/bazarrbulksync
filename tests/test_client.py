@@ -8,7 +8,7 @@ import httpx
 
 from bazarrbulksync.client import BazarrClient
 from bazarrbulksync.config import AppConfig
-from bazarrbulksync.models import ItemType, Subtitle, SyncOptions
+from bazarrbulksync.models import ItemType, PatchOptions, Subtitle, SyncOptions
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,6 +65,70 @@ def test_sync_subtitle_uses_bazarr_patch_payload() -> None:
     assert captured["no_fix_framerate"] == ["True"]
     assert captured["gss"] == ["True"]
     assert captured["reference"] == ["a:0"]
+
+
+def test_patch_subtitle_translate_payload() -> None:
+    captured: dict[str, list[str]] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured
+        captured = dict(parse_qs(request.content.decode(), keep_blank_values=True))
+        return httpx.Response(204)
+
+    client = BazarrClient(AppConfig(base_url="http://bazarr", api_key="secret"), transport=httpx.MockTransport(handler))
+    subtitle = Subtitle(name="English", code2="en", code3="eng", path="/media/file.en.srt", forced=False, hi=True)
+
+    client.patch_subtitle(
+        action="translate",
+        item_type=ItemType.MOVIE,
+        item_id=3,
+        subtitle=subtitle,
+        options=PatchOptions(language="ja", original_format=True),
+    )
+
+    assert captured["action"] == ["translate"]
+    assert captured["language"] == ["ja"]
+    assert captured["type"] == ["movie"]
+    assert captured["id"] == ["3"]
+    assert captured["forced"] == ["False"]
+    assert captured["hi"] == ["True"]
+    assert captured["original_format"] == ["True"]
+    assert "max_offset_seconds" not in captured
+    assert "no_fix_framerate" not in captured
+    assert "gss" not in captured
+    assert "reference" not in captured
+
+
+def test_patch_subtitle_mod_action_payload() -> None:
+    captured: dict[str, list[str]] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal captured
+        captured = dict(parse_qs(request.content.decode(), keep_blank_values=True))
+        return httpx.Response(204)
+
+    client = BazarrClient(AppConfig(base_url="http://bazarr", api_key="secret"), transport=httpx.MockTransport(handler))
+    subtitle = Subtitle(name="English", code2="en", code3="eng", path="/media/file.en.srt", forced=True, hi=False)
+
+    client.patch_subtitle(
+        action="remove_HI",
+        item_type=ItemType.EPISODE,
+        item_id=10,
+        subtitle=subtitle,
+        options=PatchOptions(),
+    )
+
+    assert captured["action"] == ["remove_HI"]
+    assert captured["language"] == ["en"]
+    assert captured["type"] == ["episode"]
+    assert captured["id"] == ["10"]
+    assert captured["forced"] == ["True"]
+    assert captured["hi"] == ["False"]
+    assert "original_format" not in captured
+    assert "max_offset_seconds" not in captured
+    assert "no_fix_framerate" not in captured
+    assert "gss" not in captured
+    assert "reference" not in captured
 
 
 def test_get_episodes_for_multiple_series_uses_repeated_series_ids() -> None:

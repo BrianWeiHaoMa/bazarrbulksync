@@ -7,7 +7,20 @@ from pathlib import Path
 import pytest
 
 from bazarrbulksync.config import DEFAULT_LOG_FILE_PATH, effective_log_file_path, parse_config
-from bazarrbulksync.models import Episode, Movie, Series, parse_bazarr_datetime, parse_before_argument
+from bazarrbulksync.models import (
+    ACTION_HISTORY_CODES,
+    MOD_ACTIONS,
+    PatchAction,
+    PatchOptions,
+    Subtitle,
+    action_has_history,
+    action_history_code,
+    Episode,
+    Movie,
+    Series,
+    parse_bazarr_datetime,
+    parse_before_argument,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +76,35 @@ def test_config_parses_defaults_and_sync_options() -> None:
     assert config.sync_options.forced is None
     assert config.sync_options.hi is False
     assert config.sync_options.no_fix_framerate is True
+
+
+def test_config_parses_patch_options() -> None:
+    config = parse_config(
+        {
+            "base_url": "http://bazarr.local/",
+            "api_key": "secret",
+            "patch": {
+                "language": "ja",
+                "forced": True,
+                "hi": False,
+                "original_format": True,
+            },
+        }
+    )
+
+    assert config.patch_options.language == "ja"
+    assert config.patch_options.forced is True
+    assert config.patch_options.hi is False
+    assert config.patch_options.original_format is True
+
+
+def test_config_patch_options_default_when_absent() -> None:
+    config = parse_config({"base_url": "http://bazarr.local/", "api_key": "secret"})
+
+    assert config.patch_options.language is None
+    assert config.patch_options.forced is None
+    assert config.patch_options.hi is None
+    assert config.patch_options.original_format is None
 
 
 def test_missing_specific_chunk_sizes_use_defaults() -> None:
@@ -164,3 +206,44 @@ def test_parse_before_argument_rejects_empty_and_garbage() -> None:
         parse_before_argument("")
     with pytest.raises(ValueError, match="Expected date or datetime"):
         parse_before_argument("not-a-date")
+
+
+def test_patch_action_enum_values() -> None:
+    assert PatchAction.TRANSLATE == "translate"
+    assert PatchAction.REMOVE_HI == "remove_HI"
+    assert PatchAction.OCR_FIXES == "OCR_fixes"
+    assert PatchAction.FIX_UPPERCASE == "fix_uppercase"
+    assert PatchAction.REVERSE_RTL == "reverse_rtl"
+
+
+def test_action_history_codes_mapping() -> None:
+    assert ACTION_HISTORY_CODES["sync"] == 5
+    assert ACTION_HISTORY_CODES["translate"] == 6
+    for mod in MOD_ACTIONS:
+        assert ACTION_HISTORY_CODES[mod] is None
+
+
+def test_action_has_history_and_code() -> None:
+    assert action_has_history("sync") is True
+    assert action_has_history("translate") is True
+    assert action_has_history("remove_HI") is False
+    assert action_has_history("OCR_fixes") is False
+    assert action_history_code("translate") == 6
+    assert action_history_code("remove_HI") is None
+    assert action_history_code("nonexistent") is None
+
+
+def test_patch_options_defaults_and_helpers() -> None:
+    opts = PatchOptions()
+    assert opts.language is None
+    assert opts.forced is None
+    assert opts.hi is None
+    assert opts.original_format is None
+
+    sub = Subtitle("English", "en", "eng", "/m.en.srt", forced=True, hi=False)
+    assert opts.forced_for(sub) is True
+    assert opts.hi_for(sub) is False
+
+    opts_override = PatchOptions(forced=False, hi=True)
+    assert opts_override.forced_for(sub) is False
+    assert opts_override.hi_for(sub) is True

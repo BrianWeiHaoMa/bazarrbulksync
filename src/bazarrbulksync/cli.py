@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 import sys
 from collections.abc import Iterable
+from dataclasses import replace as _replace
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -20,14 +22,28 @@ from rich.table import Table
 
 from .client import BazarrClient
 from .config import AppConfig, DEFAULT_LOG_FILE_PATH, load_config, merge_sync_options
-from .engine import SyncEngine
+from .engine import PatchEngine, SyncEngine
 from .logging_setup import setup_sync_logging, teardown_sync_logging
-from .models import MediaType, SyncJob, SyncOptions, SyncProgress, SyncSummary, parse_before_argument
+from .models import (
+    MOD_ACTIONS,
+    BeforePatchAction,
+    MediaType,
+    PatchAction,
+    PatchOptions,
+    SyncJob,
+    SyncOptions,
+    SyncProgress,
+    SyncSummary,
+    action_history_code,
+    parse_before_argument,
+)
 from .planner import SyncPlanner
 
-app = typer.Typer(help="Bulk sync subtitles through Bazarr.")
+app = typer.Typer(help="Bulk sync and patch subtitles through Bazarr.")
 sync_app = typer.Typer(help="Run bulk subtitle synchronization.")
 app.add_typer(sync_app, name="sync")
+patch_app = typer.Typer(help="Run bulk subtitle patch actions (non-sync).")
+app.add_typer(patch_app, name="patch")
 console = Console()
 
 
@@ -40,18 +56,21 @@ BeforeHistoryBatchOption = Annotated[
     typer.Option(
         "--before-history-batch-size",
         min=1,
-        help="Episode/movie IDs per batch when fetching Bazarr history for `sync before`.",
+        help="Episode/movie IDs per batch when fetching Bazarr history for `before` commands.",
     ),
 ]
-MediaTypeOption = Annotated[MediaType, typer.Option("--media-type", help="Which type of media to sync.")]
-LanguageOption = Annotated[str | None, typer.Option("--language", help="Only sync subtitles with this code2 language.")]
+MediaTypeOption = Annotated[MediaType, typer.Option("--media-type", help="Which type of media to process.")]
+LanguageOption = Annotated[str | None, typer.Option("--language", help="Only process subtitles with this code2 language.")]
 ForcedOption = Annotated[bool | None, typer.Option("--forced/--no-forced", help="Override forced flag.")]
 HiOption = Annotated[bool | None, typer.Option("--hi/--no-hi", help="Override hearing-impaired flag.")]
 MaxOffsetOption = Annotated[int | None, typer.Option("--max-offset-seconds", min=1, help="Maximum sync offset seconds.")]
 NoFixOption = Annotated[bool | None, typer.Option("--no-fix-framerate/--fix-framerate", help="Toggle framerate fixing.")]
 GssOption = Annotated[bool | None, typer.Option("--gss/--no-gss", help="Toggle usage of Golden-Section Search algorithm during syncing.")]
 ReferenceOption = Annotated[str | None, typer.Option("--reference", help="Sync reference track or subtitle path.")]
-DryRunOption = Annotated[bool, typer.Option("--dry-run", help="Simulate work without calling sync.")]
+DryRunOption = Annotated[bool, typer.Option("--dry-run", help="Simulate work without calling the API.")]
+OriginalFormatOption = Annotated[bool | None, typer.Option("--original-format/--no-original-format", help="Preserve original subtitle format.")]
+PatchActionArgument = Annotated[PatchAction, typer.Argument(help="Patch action to perform (e.g. translate, remove_HI, OCR_fixes).")]
+BeforePatchActionArgument = Annotated[BeforePatchAction, typer.Argument(help="Patch action to perform (only translate is supported for `before`).")]
 YesOption = Annotated[bool, typer.Option("--yes", "-y", help="Skip confirmation prompts.")]
 LogOption = Annotated[
     bool | None,
@@ -79,21 +98,21 @@ SeriesIdsOption = Annotated[
     str | None,
     typer.Option(
         "--series-ids",
-        help="Comma-separated Sonarr series IDs to sync (all episodes from each series given will be synced).",
+        help="Comma-separated Sonarr series IDs to process (all episodes from each series given will be processed).",
     ),
 ]
 MovieIdsOption = Annotated[
     str | None,
     typer.Option(
         "--movie-ids",
-        help="Comma-separated Radarr movie IDs to sync.",
+        help="Comma-separated Radarr movie IDs to process.",
     ),
 ]
 EpisodeIdsOption = Annotated[
     str | None,
     typer.Option(
         "--episode-ids",
-        help="Comma-separated Sonarr episode IDs to sync.",
+        help="Comma-separated Sonarr episode IDs to process.",
     ),
 ]
 
@@ -215,6 +234,22 @@ def sync_all(
                 episodes_chunk_size=config.episodes_chunk_size,
                 options=options,
             )
+        run_params = _build_run_params(
+            "sync all",
+            config,
+            dry_run=dry_run,
+            yes=yes,
+            series_ids=s or None,
+            movie_ids=m or None,
+            episode_ids=e or None,
+            language=options.language,
+            forced=options.forced,
+            hi=options.hi,
+            max_offset_seconds=options.max_offset_seconds,
+            no_fix_framerate=options.no_fix_framerate,
+            gss=options.gss,
+            reference=options.reference,
+        )
         _run_jobs(
             client,
             jobs,
@@ -223,6 +258,7 @@ def sync_all(
             yes=yes,
             log_file=eff_log_file,
             log_debug=eff_log_debug,
+            run_params=run_params,
         )
 
 
@@ -327,6 +363,22 @@ def sync_before(
                 options=options,
                 history_lookup_batch_size=before_history_batch_size,
             )
+        run_params = _build_run_params(
+            f"sync before {threshold.strftime('%Y-%m-%d %H:%M:%S')}",
+            config,
+            dry_run=dry_run,
+            yes=yes,
+            series_ids=s or None,
+            movie_ids=m or None,
+            episode_ids=e or None,
+            language=options.language,
+            forced=options.forced,
+            hi=options.hi,
+            max_offset_seconds=options.max_offset_seconds,
+            no_fix_framerate=options.no_fix_framerate,
+            gss=options.gss,
+            reference=options.reference,
+        )
         _run_jobs(
             client,
             jobs,
@@ -335,6 +387,7 @@ def sync_before(
             yes=yes,
             log_file=eff_log_file,
             log_debug=eff_log_debug,
+            run_params=run_params,
         )
 
 
@@ -378,6 +431,48 @@ def _load_runtime(
     )
 
 
+def _log_run_params(params: dict[str, Any] | None) -> None:
+    if not params:
+        return
+    logger = logging.getLogger("bazarrbulksync")
+    logger.info("Run parameters:")
+    for key, value in params.items():
+        logger.info("  %s = %s", key, value)
+
+
+def _build_run_params(
+    command: str,
+    config: AppConfig,
+    *,
+    dry_run: bool,
+    yes: bool,
+    series_ids: list[int] | None = None,
+    movie_ids: list[int] | None = None,
+    episode_ids: list[int] | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    params: dict[str, Any] = {
+        "command": command,
+        "media_type": config.media_type.value,
+        "series_chunk_size": config.series_chunk_size,
+        "movies_chunk_size": config.movies_chunk_size,
+        "episodes_chunk_size": config.episodes_chunk_size,
+        "before_history_batch_size": config.before_history_batch_size,
+        "timeout_seconds": config.timeout_seconds,
+        "retries": config.retries,
+        "dry_run": dry_run,
+        "yes": yes,
+    }
+    if series_ids:
+        params["series_ids"] = series_ids
+    if movie_ids:
+        params["movie_ids"] = movie_ids
+    if episode_ids:
+        params["episode_ids"] = episode_ids
+    params.update(extra)
+    return params
+
+
 def _run_jobs(
     client: BazarrClient,
     jobs: Iterable[SyncJob],
@@ -387,15 +482,17 @@ def _run_jobs(
     yes: bool,
     log_file: Path | None = None,
     log_debug: bool = False,
+    run_params: dict[str, Any] | None = None,
 ) -> None:
     setup_sync_logging(log_file, debug=log_debug)
+    _log_run_params(run_params)
     try:
         job_list = list(jobs)
         if not job_list:
             console.print("[yellow]No local subtitle files matched the request.[/yellow]")
             return
 
-        action = "dry-run" if dry_run else "sync"
+        action = "dry-run sync" if dry_run else "sync"
         if not dry_run and not yes and sys.stdin.isatty():
             typer.confirm(f"About to {action} {len(job_list)} subtitle files. Continue?", abort=True)
 
@@ -433,6 +530,332 @@ def _print_summary(summary: SyncSummary) -> None:
     table.add_column("Status")
     table.add_column("Count", justify="right")
     table.add_row("Synced", str(summary.synced))
+    table.add_row("Dry run", str(summary.dry_run))
+    table.add_row("Skipped", str(summary.skipped))
+    table.add_row("Failed", str(summary.failed))
+    table.add_row("Total", str(summary.total))
+    console.print(table)
+
+    failures = [result for result in summary.results if result.status == "failed"]
+    for result in failures[:10]:
+        console.print(f"[red]FAILED[/red] {result.job.display_name}: {result.message}")
+    if len(failures) > 10:
+        console.print(f"[red]...and {len(failures) - 10} more failures[/red]")
+
+
+@patch_app.command("all", help="Run a patch action on all subtitles without date/datetime restriction.")
+def patch_all(
+    action: PatchActionArgument,
+    config_path: ConfigOption = None,
+    series_chunk_size: SeriesChunkOption = None,
+    movies_chunk_size: MoviesChunkOption = None,
+    episodes_chunk_size: EpisodesChunkOption = None,
+    series_ids: SeriesIdsOption = None,
+    movie_ids: MovieIdsOption = None,
+    episode_ids: EpisodeIdsOption = None,
+    media_type: MediaTypeOption = MediaType.ALL,
+    language: LanguageOption = None,
+    forced: ForcedOption = None,
+    hi: HiOption = None,
+    original_format: OriginalFormatOption = None,
+    dry_run: DryRunOption = False,
+    yes: YesOption = False,
+    log: LogOption = None,
+    log_file: LogFileOption = None,
+    log_debug: LogDebugOption = None,
+) -> None:
+    action_str = action.value
+    _validate_patch_action(action_str, require_language=False, language=language)
+    config, options = _load_patch_runtime(
+        config_path,
+        series_chunk_size=series_chunk_size,
+        movies_chunk_size=movies_chunk_size,
+        episodes_chunk_size=episodes_chunk_size,
+        media_type=media_type,
+        language=language,
+        forced=forced,
+        hi=hi,
+        original_format=original_format,
+    )
+    s, m, e, use_ids = _cli_id_lists_for_sync(config.media_type, series_ids, movie_ids, episode_ids)
+    eff_log_file, eff_log_debug = _effective_log_settings(config, log=log, log_file=log_file, log_debug=log_debug)
+    with BazarrClient(config) as client:
+        planner = SyncPlanner(client)
+        if use_ids:
+            console.print(f"[cyan]Planning {action_str} for the given Sonarr/Radarr IDs...[/cyan]")
+            jobs = planner.iter_jobs_for_ids(
+                series_ids=s,
+                movie_ids=m,
+                episode_ids=e,
+                options=options,
+                episodes_chunk_size=config.episodes_chunk_size,
+            )
+        else:
+            console.print(
+                f"[cyan]Counting total number of subtitle files to apply `{action_str}` patch on. This should take only a few seconds...[/cyan]"
+            )
+            jobs = planner.iter_all_jobs(
+                media_type=config.media_type,
+                series_chunk_size=config.series_chunk_size,
+                movies_chunk_size=config.movies_chunk_size,
+                episodes_chunk_size=config.episodes_chunk_size,
+                options=options,
+            )
+        run_params = _build_run_params(
+            f"patch all {action_str}",
+            config,
+            dry_run=dry_run,
+            yes=yes,
+            series_ids=s or None,
+            movie_ids=m or None,
+            episode_ids=e or None,
+            language=options.language,
+            forced=options.forced,
+            hi=options.hi,
+            original_format=options.original_format,
+        )
+        _run_patch_jobs(
+            client,
+            jobs,
+            action=action_str,
+            options=options,
+            dry_run=dry_run,
+            yes=yes,
+            log_file=eff_log_file,
+            log_debug=eff_log_debug,
+            run_params=run_params,
+        )
+
+
+@patch_app.command(
+    "before",
+    help="Only patch subtitles whose media was last patched with the given action before a given date/datetime.",
+)
+def patch_before(
+    before: Annotated[
+        str,
+        typer.Argument(
+            help=(
+                "Only include media whose last Bazarr action is strictly before this instant (date or datetime), "
+                "e.g. 2025-09-01 or '2025-09-01 14:30:00'."
+            ),
+        ),
+    ],
+    action: BeforePatchActionArgument,
+    config_path: ConfigOption = None,
+    series_chunk_size: SeriesChunkOption = None,
+    movies_chunk_size: MoviesChunkOption = None,
+    episodes_chunk_size: EpisodesChunkOption = None,
+    series_ids: SeriesIdsOption = None,
+    movie_ids: MovieIdsOption = None,
+    episode_ids: EpisodeIdsOption = None,
+    before_history_batch_size: BeforeHistoryBatchOption = None,
+    media_type: MediaTypeOption = MediaType.ALL,
+    language: LanguageOption = None,
+    forced: ForcedOption = None,
+    hi: HiOption = None,
+    original_format: OriginalFormatOption = None,
+    dry_run: DryRunOption = False,
+    yes: YesOption = False,
+    log: LogOption = None,
+    log_file: LogFileOption = None,
+    log_debug: LogDebugOption = None,
+) -> None:
+    action_str = action.value
+    _validate_patch_action(action_str, require_language=(action_str == "translate"), language=language)
+    try:
+        threshold = parse_before_argument(before)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    action_code = action_history_code(action_str)
+    config, options = _load_patch_runtime(
+        config_path,
+        series_chunk_size=series_chunk_size,
+        movies_chunk_size=movies_chunk_size,
+        episodes_chunk_size=episodes_chunk_size,
+        before_history_batch_size=before_history_batch_size,
+        media_type=media_type,
+        language=language,
+        forced=forced,
+        hi=hi,
+        original_format=original_format,
+    )
+    s, m, e, use_ids = _cli_id_lists_for_sync(config.media_type, series_ids, movie_ids, episode_ids)
+    eff_log_file, eff_log_debug = _effective_log_settings(config, log=log, log_file=log_file, log_debug=log_debug)
+    with BazarrClient(config) as client:
+        planner = SyncPlanner(client)
+        if use_ids:
+            console.print(
+                f"[cyan]Finding subtitle files for the given IDs whose last {action_str} was before "
+                f"{threshold.strftime('%Y-%m-%d %H:%M:%S')}...[/cyan]"
+            )
+            id_jobs = list(
+                planner.iter_jobs_for_ids(
+                    series_ids=s,
+                    movie_ids=m,
+                    episode_ids=e,
+                    options=options,
+                    episodes_chunk_size=config.episodes_chunk_size,
+                )
+            )
+            jobs = planner.iter_before_jobs_from_jobs(
+                threshold,
+                id_jobs,
+                history_lookup_batch_size=before_history_batch_size,
+                action_code=action_code,
+            )
+        else:
+            console.print(
+                f"[cyan]Finding all subtitle files whose last {action_str} was before "
+                f"{threshold.strftime('%Y-%m-%d %H:%M:%S')}. On large libraries, this could take a few minutes...[/cyan]"
+            )
+            episode_item_ids, movie_item_ids = planner.collect_job_item_ids(
+                media_type=config.media_type,
+                series_chunk_size=config.series_chunk_size,
+                movies_chunk_size=config.movies_chunk_size,
+                episodes_chunk_size=config.episodes_chunk_size,
+                options=options,
+            )
+            jobs = planner.iter_before_jobs(
+                threshold,
+                episode_item_ids,
+                movie_item_ids,
+                media_type=config.media_type,
+                series_chunk_size=config.series_chunk_size,
+                movies_chunk_size=config.movies_chunk_size,
+                episodes_chunk_size=config.episodes_chunk_size,
+                options=options,
+                history_lookup_batch_size=before_history_batch_size,
+                action_code=action_code,
+            )
+        run_params = _build_run_params(
+            f"patch before {threshold.strftime('%Y-%m-%d %H:%M:%S')} {action_str}",
+            config,
+            dry_run=dry_run,
+            yes=yes,
+            series_ids=s or None,
+            movie_ids=m or None,
+            episode_ids=e or None,
+            language=options.language,
+            forced=options.forced,
+            hi=options.hi,
+            original_format=options.original_format,
+        )
+        _run_patch_jobs(
+            client,
+            jobs,
+            action=action_str,
+            options=options,
+            dry_run=dry_run,
+            yes=yes,
+            log_file=eff_log_file,
+            log_debug=eff_log_debug,
+            run_params=run_params,
+        )
+
+
+def _validate_patch_action(action: str, *, require_language: bool, language: str | None) -> None:
+    if action == "sync":
+        raise typer.BadParameter("Use `sync all` or `sync before` for sync actions.")
+    if require_language and not language:
+        raise typer.BadParameter(f"--language is required for action '{action}'.")
+
+
+def _load_patch_runtime(
+    config_path: Path | None,
+    *,
+    series_chunk_size: int | None,
+    movies_chunk_size: int | None,
+    episodes_chunk_size: int | None,
+    before_history_batch_size: int | None = None,
+    media_type: MediaType,
+    language: str | None,
+    forced: bool | None,
+    hi: bool | None,
+    original_format: bool | None,
+) -> tuple[AppConfig, PatchOptions]:
+    config = load_config(config_path)
+    base = config.patch_options
+    overrides: dict[str, object] = {}
+    if language is not None:
+        overrides["language"] = language
+    if forced is not None:
+        overrides["forced"] = forced
+    if hi is not None:
+        overrides["hi"] = hi
+    if original_format is not None:
+        overrides["original_format"] = original_format
+    options = _replace(base, **overrides)
+    return (
+        config.with_overrides(
+            series_chunk_size=series_chunk_size,
+            movies_chunk_size=movies_chunk_size,
+            episodes_chunk_size=episodes_chunk_size,
+            before_history_batch_size=before_history_batch_size,
+            media_type=media_type,
+        ),
+        options,
+    )
+
+
+def _run_patch_jobs(
+    client: BazarrClient,
+    jobs: Iterable[SyncJob],
+    *,
+    action: str,
+    options: PatchOptions,
+    dry_run: bool,
+    yes: bool,
+    log_file: Path | None = None,
+    log_debug: bool = False,
+    run_params: dict[str, Any] | None = None,
+) -> None:
+    setup_sync_logging(log_file, debug=log_debug)
+    _log_run_params(run_params)
+    try:
+        job_list = list(jobs)
+        if not job_list:
+            console.print("[yellow]No local subtitle files matched the request.[/yellow]")
+            return
+
+        verb = f"dry-run `{action}`" if dry_run else f"apply `{action}`"
+        if not dry_run and not yes and sys.stdin.isatty():
+            typer.confirm(f"About to {verb} patch on {len(job_list)} subtitle files. Continue?", abort=True)
+
+        console.print(f"[cyan]Applying `{action}` patch on {len(job_list)} subtitles now...[/cyan]")
+        engine = PatchEngine(client)
+        if sys.stdout.isatty():
+            with Progress(
+                TimeElapsedColumn(),
+                SpinnerColumn(),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TaskProgressColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task_id = progress.add_task(f"Applying {action} to subtitles", total=len(job_list))
+
+                def update(event: SyncProgress) -> None:
+                    description = "Finished: " + event.job.display_name if event.job else f"Applying {action} to subtitles"
+                    progress.update(task_id, completed=event.completed, description=description)
+
+                summary = engine.run(job_list, action=action, options=options, dry_run=dry_run, progress=update, total=len(job_list))
+        else:
+            summary = engine.run(job_list, action=action, options=options, dry_run=dry_run, total=len(job_list))
+
+        _print_patch_summary(summary, action=action)
+        if summary.failed:
+            raise typer.Exit(1)
+    finally:
+        teardown_sync_logging()
+
+
+def _print_patch_summary(summary: SyncSummary, *, action: str) -> None:
+    table = Table(title=f"Bazarr Bulk `{action}` Patch Summary")
+    table.add_column("Status")
+    table.add_column("Count", justify="right")
+    table.add_row("Applied", str(summary.synced))
     table.add_row("Dry run", str(summary.dry_run))
     table.add_row("Skipped", str(summary.skipped))
     table.add_row("Failed", str(summary.failed))

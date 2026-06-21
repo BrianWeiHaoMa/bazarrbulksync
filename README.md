@@ -3,28 +3,28 @@
 An optimized command-line tool for bulk syncing media subtitles in Bazarr.
 
 <p>
-  <img src="https://raw.githubusercontent.com/BrianWeiHaoMa/bazarrbulksync/v0.2.0/images/finished.png" alt="CLI Output Example" width="600"/>
+  <img src="https://raw.githubusercontent.com/BrianWeiHaoMa/bazarrbulksync/v0.3.0/images/finished.png" alt="CLI Output Example" width="600"/>
 </p>
 
-## TLDR Sync Everything
+## TL;DR Sync Everything
 
-You should have a [config file](https://github.com/BrianWeiHaoMa/bazarrbulksync/blob/v0.2.0/bazarrbulksync_config.yml) in your current working directory. Set `base_url` and `api_key` to your Bazarr instance.
+You should have a [config file](https://github.com/BrianWeiHaoMa/bazarrbulksync/blob/v0.3.0/bazarrbulksync_config.yml) in your current working directory. Set `base_url` and `api_key` to your Bazarr instance.
 
 ### Docker
 
 ```
 # Sync all subtitles interactively.
-docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.2.0 sync all
+docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.3.0 sync all
 
 # Sync all subtitles detached.
-docker run --rm -d -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.2.0 sync all
+docker run --rm -d -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.3.0 sync all
 ```
 
 ### Local Python
 
 ```
 # Sync all subtitles interactively.
-pip install bazarrbulksync==0.2.0
+pip install bazarrbulksync==0.3.0
 bazarrbulksync sync all --config ./bazarrbulksync_config.yml
 ```
 
@@ -69,21 +69,21 @@ The CLI was created using [Rich](https://github.com/textualize/rich). You can vi
 
 ```
 # Get the CLI help page.
-docker run --rm -it wayhowma/bazarrbulksync:0.2.0 --help
+docker run --rm -it wayhowma/bazarrbulksync:0.3.0 --help
 
 # Get the sync command help page.
-docker run --rm -it wayhowma/bazarrbulksync:0.2.0 sync --help
+docker run --rm -it wayhowma/bazarrbulksync:0.3.0 sync --help
 
 # Get the sync all command help page.
-docker run --rm -it wayhowma/bazarrbulksync:0.2.0 sync all --help
+docker run --rm -it wayhowma/bazarrbulksync:0.3.0 sync all --help
 
 # Get the sync before command help page.
-docker run --rm -it wayhowma/bazarrbulksync:0.2.0 sync before --help
+docker run --rm -it wayhowma/bazarrbulksync:0.3.0 sync before --help
 ```
 
 ### Configuration
 
-Bazarr Bulk Sync reads a YAML config—see the [sample layout](https://github.com/BrianWeiHaoMa/bazarrbulksync/blob/v0.2.0/bazarrbulksync_config.yml). If you omit `--config`, it looks for `./bazarrbulksync/bazarrbulksync_config.yml` first; if that file does not exist, it uses `./bazarrbulksync_config.yml` in the current working directory. With the usual Docker volume layout, the nested path inside the container is `/app/bazarrbulksync/bazarrbulksync_config.yml`. Use `--config` to point anywhere else.
+Bazarr Bulk Sync reads a YAML config—see the [sample layout](https://github.com/BrianWeiHaoMa/bazarrbulksync/blob/v0.3.0/bazarrbulksync_config.yml). If you omit `--config`, it looks for `./bazarrbulksync/bazarrbulksync_config.yml` first; if that file does not exist, it uses `./bazarrbulksync_config.yml` in the current working directory. With the usual Docker volume layout, the nested path inside the container is `/app/bazarrbulksync/bazarrbulksync_config.yml`. Use `--config` to point anywhere else.
 
 The defaults in that file are sensible starting points. The options that most affect sync behaviour are `max_offset_seconds`, `no_fix_framerate`, and `gss`, depending on your media and subtitles.
 
@@ -93,19 +93,19 @@ The defaults in that file are sensible starting points. The options that most af
 
 ```
 # Syncs all episodes for the series with IDs 10, 20, and 50, and syncs the movie with an ID of 5.
-docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.2.0 sync all --series-ids 10,20,50 --movie-ids 5
+docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.3.0 sync all --series-ids 10,20,50 --movie-ids 5
 ```
 
 ```
 # Syncs all movies whose latest sync is before 2026-03-01.
-docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.2.0 sync before 2026-03-01 --media-type movies
+docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml wayhowma/bazarrbulksync:0.3.0 sync before 2026-03-01 --media-type movies
 ```
 
 ```
 # Syncs all subtitles with debug logging to the local ./bazarrbulksync.log file.
 # Create an empty host file first so Docker bind-mounts a file, not a directory.
 touch ./bazarrbulksync.log
-docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml -v ./bazarrbulksync.log:/app/bazarrbulksync/bazarrbulksync.log wayhowma/bazarrbulksync:0.2.0 sync all --log --log-debug
+docker run --rm -it -v ./bazarrbulksync_config.yml:/app/bazarrbulksync/bazarrbulksync_config.yml -v ./bazarrbulksync.log:/app/bazarrbulksync/bazarrbulksync.log wayhowma/bazarrbulksync:0.3.0 sync all --log --log-debug
 ```
 
 #### Local Python
