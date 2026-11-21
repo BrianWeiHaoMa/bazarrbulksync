@@ -23,6 +23,7 @@ Accepted limits:
 
 - Every change is made by Bazarr to the subtitle files themselves. The tool keeps no backup and cannot undo a sync, a fix, or a deletion.
 - The tool knows only what Bazarr's API shows. A subtitle changed on disk without Bazarr recording it keeps the status Bazarr's history gives it.
+- Bazarr's history gives event times as local times to the second, so two events of the same kind for one subtitle with the same such time count as one.
 - Bazarr records a sync it performs while downloading, upgrading, or uploading a subtitle before it records the download, upgrade, or upload itself, so such a subtitle is not currently synced and `sync` has it synchronized again.
 - A sync already handed to Bazarr when a run stops is left to Bazarr, which finishes it unless it restarts or someone removes it first; the tool does not cancel it.
 - The memory of failed syncs is one local file. Losing it costs repeated attempts, nothing else.
@@ -75,7 +76,7 @@ Behavior outside these assumptions is not promised.
 
 - **E1.** The server at the given address is upstream Bazarr, not a fork. When it is version 1.6.0 or newer, its HTTP API behaves, for the calls the tool makes, as Bazarr 1.6 does. No login other than the API key stands in front of it, and over HTTPS its certificate is trusted by the machine running the tool. A server that is older, does not answer, or rejects the key is admitted.
 - **E2.** One bazarrbulksync run at a time uses a given Bazarr server and a given state file.
-- **E3.** During a run, nobody removes or cancels that run's syncs in Bazarr's job queue. Bazarr's own tasks, its web interface, and restarts of Bazarr are admitted.
+- **E3.** During a run, nobody removes or cancels that run's syncs in Bazarr's job queue. Bazarr's own tasks, its web interface, and restarts of Bazarr are admitted. Bazarr shows a sync it starts as running within five seconds of no longer showing it as queued.
 - **E4.** The state file is on a local filesystem and nothing else writes it. Interruption of the tool at any moment is admitted; power loss and device failure are not.
 
 ## Fixed decisions
@@ -103,7 +104,7 @@ Behavior outside these assumptions is not promised.
 ### Every command
 
 - **G1.** Run with no command and neither `--help` nor `--version`, or with an unknown command or option, a malformed value, or both options of a pair (`--movies` with `--series`, `--hi` with `--no-hi`, `--forced` with `--no-forced`), the program prints a usage error on standard error, exits nonzero, and contacts nothing.
-- **G2.** Before reading or changing anything in Bazarr, a command checks the connection. A missing address or API key, a server that does not answer, a rejected API key, or a Bazarr older than 1.6.0 is named on standard error, with the address when one was given; the command exits nonzero and changes nothing.
+- **G2.** Before reading or changing anything in Bazarr, a command checks the connection. A missing address or API key, a server that does not answer, a rejected API key, or a Bazarr that does not report a version of 1.6.0 or newer is named on standard error, with the address when one was given; the command exits nonzero and changes nothing.
 - **G3.** When Bazarr stops answering, or answers a read with an error, during a run, the command keeps retrying for 5 minutes. If Bazarr has not answered by then, the command stops as G4 describes.
 - **G4.** On Ctrl-C, or on SIGTERM, which a container stop sends by default, a command sends no further changing request and exits nonzero without waiting for syncs still in Bazarr; `sync`, `fix`, and `delete` first print the totals of G14 for what finished. Syncs still in Bazarr are neither reported as `failed` nor recorded in the state file.
 - **G5.** Result lines and totals go to standard output; prompts, progress, and errors go to standard error. When standard output is not a terminal it carries plain lines only, with no color and no cursor movement.
@@ -136,7 +137,7 @@ Behavior outside these assumptions is not promised.
 - **G20.** When neither outcome of G19 can be established, because Bazarr restarted after it was last read before the submission, or never answered the request and shows the sync neither queued nor running, the subtitle is reported as `unconfirmed`: nothing is recorded in the state file, and the run continues with the next subtitle. When Bazarr stops answering and answers again within G3 without having restarted, `sync` goes on waiting for the syncs Bazarr still shows.
 - **G21.** When Bazarr ran a sync and it ended without a sync event (the second case of G19), `sync` records the failure in the state file under the Bazarr address. A request Bazarr refused is not recorded. A recorded failure lasts until Bazarr's history shows, for that path, a download (automatic or manual), upgrade, upload, translation, or sync event it did not show when read immediately before the failed sync was submitted.
 - **G22.** After `sync` is killed at any moment, every failure recorded before the kill is read by the next run; the failure being recorded at the kill is either absent or complete.
-- **G23.** When the state file cannot be read or written, or is not a state file, `sync` says so on standard error, leaves that file untouched, and runs as if no failure were recorded. A state file that does not exist yet is created when the first failure is recorded.
+- **G23.** When the state file cannot be read or written, or is not a state file, `sync` says so on standard error, leaves that file untouched, and from then on runs as if no failure were recorded. A state file that does not exist yet is created when the first failure is recorded.
 
 ### `fix`
 
