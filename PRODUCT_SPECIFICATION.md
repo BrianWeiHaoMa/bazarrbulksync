@@ -11,19 +11,20 @@ bazarrbulksync is a command-line tool for people who run Bazarr and need to act 
 Two terms are used throughout:
 
 - An **external subtitle** is a subtitle file that Bazarr has indexed for a movie or an episode. Tracks embedded in a video file are never selected.
-- An external subtitle is **currently synced** when Bazarr's history for its file path holds a sync event newer than every download, upgrade, upload, and translation event for that path.
+- An external subtitle is **currently synced** when Bazarr's history for its file path holds a sync event newer than every download (automatic or manual), upgrade, upload, and translation event for that path.
 
 What matters most:
 
-- A `sync` run can stop at any moment, and running the same command again continues it: a subtitle Bazarr recorded as synced is not synced again.
+- A `sync` run can stop at any moment, and running the same command again continues it: without `--resync`, a subtitle whose sync from an earlier run Bazarr recorded is not synced again until Bazarr's history shows it replaced.
 - A subtitle reported as `synced` is one whose sync Bazarr recorded.
-- Bazarr is handed only a few syncs at a time, never the whole library.
+- Bazarr is handed syncs only as fast as `--concurrency` allows, one at a time unless the user asks for more.
 
 Accepted limits:
 
 - Every change is made by Bazarr to the subtitle files themselves. The tool keeps no backup and cannot undo a sync, a fix, or a deletion.
 - The tool knows only what Bazarr's API shows. A subtitle changed on disk without Bazarr recording it keeps the status Bazarr's history gives it.
-- A sync already handed to Bazarr when a run stops finishes inside Bazarr; the tool does not cancel it.
+- Bazarr records a sync it performs while downloading, upgrading, or uploading a subtitle before it records the download, upgrade, or upload itself, so such a subtitle is not currently synced and `sync` has it synchronized again.
+- A sync already handed to Bazarr when a run stops is left to Bazarr, which finishes it unless it restarts or someone removes it first; the tool does not cancel it.
 - The memory of failed syncs is one local file. Losing it costs repeated attempts, nothing else.
 
 ## In use
@@ -36,7 +37,7 @@ bazarrbulksync sync --dry-run
 bazarrbulksync sync
 ```
 
-`list` prints the English external subtitles of the whole library and their totals (G10). `sync --dry-run` prints, for every external subtitle, whether a sync would be requested or why not, and changes nothing (G13). `sync` prints how many subtitles are selected and asks for confirmation (G12); it then hands them to Bazarr one at a time (G17), printing each outcome as Bazarr finishes it (G14, G19), until every subtitle has been handled. The user presses Ctrl-C at any point (G4) and later runs `bazarrbulksync sync` again: subtitles currently synced are skipped, and subtitles reported `failed` are skipped too (G15, G21).
+`list` prints the English external subtitles of the whole library and their totals (G10). `sync --dry-run` prints, for every external subtitle, whether a sync would be requested or why not, and changes nothing (G13). `sync` prints how many subtitles are selected and asks for confirmation (G12); it then hands them to Bazarr one at a time (G17), printing each outcome as Bazarr finishes it (G14, G19), until every subtitle has been handled. The user presses Ctrl-C at any point (G4) and later runs `bazarrbulksync sync` again: subtitles currently synced are skipped, and subtitles reported `failed` after Bazarr ran their sync are skipped too (G15, G21).
 
 Run every night from a scheduler, the same command catches up on whatever Bazarr downloaded since:
 
@@ -80,7 +81,7 @@ Behavior outside these assumptions is not promised.
 
 - **F1.** The product and its command are named `bazarrbulksync`.
 - **F2.** It is released as one self-contained executable each for Linux, macOS, and Windows on x86-64 and arm64, attached to the GitHub releases of the project's repository, and as the container image `wayhowma/bazarrbulksync` for linux/amd64 and linux/arm64 whose entry point is the command. Running it requires no interpreter, runtime, or other installed software. It is not published as a Python package.
-- **F3.** Its only contact with anything outside itself is Bazarr's HTTP API, authenticated with Bazarr's API key. The only file it reads or writes is the state file of F9.
+- **F3.** Its only contact with anything outside itself, apart from the name lookup that reaches the address, is Bazarr's HTTP API, authenticated with Bazarr's API key. The only files it reads or writes, apart from what the operating system consults to reach the address and trust its certificate, are the state file of F9 and a temporary file beside it.
 - **F4.** The connection is given by the environment variables `BAZARR_URL` (the address including any base path, for example `https://host/bazarr`) and `BAZARR_API_KEY`; the options `--url` and `--api-key` override them.
 - **F5.** The commands are `list`, `sync`, `fix`, and `delete`. `bazarrbulksync --version` prints the version; `--help` on the program or on a command prints its usage.
 - **F6.** Every command accepts these selection options:
@@ -92,7 +93,7 @@ Behavior outside these assumptions is not promised.
   - `--hi`, `--no-hi`: only, or no, hearing-impaired subtitles;
   - `--forced`, `--no-forced`: only, or no, forced subtitles.
 - **F7.** `sync`, `fix`, and `delete` accept `--yes` and `--dry-run`. `list` accepts `--json`, whose objects have exactly the fields `type` (`"movie"` or `"episode"`), `title` (the movie or series title), `movie_id`, `series_id`, `episode_id`, `season`, `episode`, `language`, `hi`, `forced`, and `path`; a field that does not apply to the subtitle's type is `null`.
-- **F8.** `sync` accepts `--resync`, `--retry-failed`, `--concurrency N` (a whole number of at least 1; default 1), `--state-file PATH`, and the sync options `--max-offset-seconds N`, `--no-fix-framerate`, `--gss`, and `--reference REF`. REF is `a:N` or `s:N` with N from 0 to 9 (audio track N or embedded subtitle track N of each video, as Bazarr numbers them) or `lang:CODE` (the same video's external, non-forced subtitle in language CODE; the one that is not hearing-impaired when both exist).
+- **F8.** `sync` accepts `--resync`, `--retry-failed`, `--concurrency N` (a whole number of at least 1; default 1), `--state-file PATH`, and the sync options `--max-offset-seconds N` (a whole number of at least 1), `--no-fix-framerate`, `--gss`, and `--reference REF`. REF is `a:N` or `s:N` with N from 0 to 9 (audio track N or embedded subtitle track N of each video, as Bazarr numbers them) or `lang:CODE` (the same video's external, non-forced subtitle in language CODE; the one that is not hearing-impaired when both exist, and among several such, the one whose path comes first in byte order).
 - **F9.** The state file holds only what G21 needs. In the container image its default path is `/data/state.json`.
 - **F10.** `fix` takes exactly one fix name: `remove-hi`, `remove-tags`, `ocr-fixes`, `common-fixes`, `fix-uppercase`, or `remove-emoji`. Each is Bazarr's subtitle modification of that meaning, applied by Bazarr.
 
@@ -103,7 +104,7 @@ Behavior outside these assumptions is not promised.
 - **G1.** Run with no command and neither `--help` nor `--version`, or with an unknown command or option, a malformed value, or both options of a pair (`--movies` with `--series`, `--hi` with `--no-hi`, `--forced` with `--no-forced`), the program prints a usage error on standard error, exits nonzero, and contacts nothing.
 - **G2.** Before reading or changing anything in Bazarr, a command checks the connection. A missing address or API key, a server that does not answer, a rejected API key, or a Bazarr older than 1.6.0 is named on standard error, with the address when one was given; the command exits nonzero and changes nothing.
 - **G3.** When Bazarr stops answering during a run, the command keeps retrying for 5 minutes. If Bazarr has not answered by then, the command stops as G4 describes.
-- **G4.** On Ctrl-C, or on the termination signal a container stop sends, a command sends no further changing request and exits nonzero without waiting for syncs still in Bazarr; `sync`, `fix`, and `delete` first print the totals of G14 for what finished. Syncs still in Bazarr are neither reported as `failed` nor recorded in the state file.
+- **G4.** On Ctrl-C, or on SIGTERM, which a container stop sends by default, a command sends no further changing request and exits nonzero without waiting for syncs still in Bazarr; `sync`, `fix`, and `delete` first print the totals of G14 for what finished. Syncs still in Bazarr are neither reported as `failed` nor recorded in the state file.
 - **G5.** Result lines and totals go to standard output; prompts, progress, and errors go to standard error. When standard output is not a terminal it carries plain lines only, with no color and no cursor movement.
 - **G6.** A command exits nonzero when one of G1 to G4, G8, G12, or G26 stops it, or when it reports any subtitle as `failed` or `unconfirmed`; otherwise it exits zero.
 
@@ -111,7 +112,7 @@ Behavior outside these assumptions is not promised.
 
 - **G7.** A subtitle is selected when it satisfies every kind of selection option given. Among `--title`, `--movie-id`, and `--series-id`, matching any one given value suffices; a repeated `--season` or `--language` matches any of its values. `--season` excludes movie subtitles. With no selection option, every external subtitle is selected.
 - **G8.** A `--title` value that matches no movie or series, or an ID Bazarr does not have, is named on standard error; the command exits nonzero before changing anything.
-- **G9.** When none of G1, G2, G8, and G26 stops the command and the selection matches no external subtitle, the command says so on standard error, changes nothing, and exits zero.
+- **G9.** When none of G1 to G4, G8, and G26 stops the command and the selection matches no external subtitle, the command says so on standard error, changes nothing, and exits zero.
 
 ### `list`
 
@@ -126,25 +127,25 @@ Behavior outside these assumptions is not promised.
 
 ### `sync`
 
-- **G15.** `sync` never submits: a forced subtitle (Bazarr does not synchronize forced subtitles); a currently synced subtitle, unless `--resync` is given; a subtitle with a recorded failure (G21), unless `--retry-failed` is given; and, with `--reference lang:CODE`, a subtitle in language CODE or one whose video has no reference subtitle of F8.
+- **G15.** `sync` never submits, judging by Bazarr as read immediately before the submission: a forced subtitle (Bazarr does not synchronize forced subtitles); a currently synced subtitle, unless `--resync` is given; a subtitle with a recorded failure (G21), unless `--retry-failed` is given; and, with `--reference lang:CODE`, a subtitle in language CODE or one whose video has no reference subtitle of F8.
 - **G16.** Every other selected subtitle is submitted to Bazarr, once G17 and G18 allow, as one sync request carrying the sync options given. A sync option not given is left out of the request.
-- **G17.** At most `--concurrency` of the run's sync requests are queued or running in Bazarr at any moment.
-- **G18.** A subtitle is not submitted while Bazarr already shows a sync of it queued or running; `sync` waits until Bazarr no longer shows that sync, then handles the subtitle under G15 and G16.
+- **G17.** At most `--concurrency` of the run's sync requests are queued or running in Bazarr at any moment; a request Bazarr never answered stops counting once its subtitle is reported `unconfirmed` (G20).
+- **G18.** A subtitle is not submitted when Bazarr, read immediately before the submission, shows a sync of it queued or running; `sync` waits until Bazarr no longer shows that sync, then handles the subtitle under G15 and G16.
 - **G19.** `sync` reports a subtitle as `synced` only once Bazarr's history shows a sync event for its path that was not there at submission. It reports `failed` when Bazarr refuses the request, or when Bazarr accepted the request, has not restarted since, no longer shows the sync queued or running, and shows no such event in its history.
 - **G20.** When neither outcome of G19 can be established, because Bazarr restarted after the submission, or never answered the request and shows the sync neither queued nor running, the subtitle is reported as `unconfirmed`: nothing is recorded in the state file, and the run continues with the next subtitle. When Bazarr stops answering and answers again within G3 without having restarted, `sync` goes on waiting for the syncs Bazarr still shows.
-- **G21.** When Bazarr ran a sync and it ended without a sync event (the second case of G19), `sync` records the failure in the state file under the Bazarr address. A request Bazarr refused is not recorded. A recorded failure lasts until Bazarr's history shows a download, upgrade, upload, or translation event for that path newer than the failure, or until a later sync of that subtitle is reported `synced`.
+- **G21.** When Bazarr ran a sync and it ended without a sync event (the second case of G19), `sync` records the failure in the state file under the Bazarr address. A request Bazarr refused is not recorded. A recorded failure lasts until Bazarr's history shows, for that path, a download (automatic or manual), upgrade, upload, translation, or sync event it did not show when read immediately before the failed sync was submitted.
 - **G22.** After `sync` is killed at any moment, every failure recorded before the kill is read by the next run; the failure being recorded at the kill is either absent or complete.
 - **G23.** When the state file cannot be read or written, or is not a state file, `sync` says so on standard error, leaves that file untouched, and runs as if no failure were recorded. A state file that does not exist yet is created when the first failure is recorded.
 
 ### `fix`
 
-- **G24.** `fix` asks Bazarr to apply the named fix to each selected subtitle that G25 does not skip, one request at a time. The outcome is `applied` when Bazarr accepts the request and `failed` when it refuses. `fix` keeps no record: run again, it asks again for every such subtitle.
-- **G25.** `fix remove-hi` skips a hearing-impaired subtitle whose video has another external subtitle of the same language and forced flag that is not hearing-impaired, because Bazarr would replace that other subtitle with the result.
+- **G24.** `fix` asks Bazarr to apply the named fix to each selected subtitle that G25 does not skip, one request at a time. The outcome is `applied` when Bazarr accepts the request, `failed` when it refuses, and `unconfirmed`, without a second request, when it never answers. `fix` keeps no record: run again, it asks again for every such subtitle.
+- **G25.** `fix remove-hi` skips a hearing-impaired subtitle whose video has another external subtitle of the same language and forced flag that is not hearing-impaired, because Bazarr can replace that other subtitle with the result.
 
 ### `delete`
 
 - **G26.** `delete` given no selection option says on standard error that one is required, exits nonzero, and changes nothing, without contacting Bazarr.
-- **G27.** `delete` asks Bazarr to delete each selected subtitle, one request at a time. The outcome is `deleted` when Bazarr accepts the request and `failed` when it refuses.
+- **G27.** `delete` asks Bazarr to delete each selected subtitle, one request at a time. The outcome is `deleted` when Bazarr accepts the request, `failed` when it refuses, and `unconfirmed`, without a second request, when it never answers.
 
 ## Left open
 
@@ -156,8 +157,8 @@ Behavior outside these assumptions is not promised.
 ## Done when
 
 - On Linux, macOS, and Windows machines with no interpreter or runtime installed, the downloaded executable runs `bazarrbulksync list` against a Bazarr 1.6 server and prints every external subtitle the server's web interface shows. `docker run -e BAZARR_URL -e BAZARR_API_KEY wayhowma/bazarrbulksync list --json` prints one JSON object per subtitle with exactly the fields of F7, each `path` equal to the path the web interface shows.
-- Against a Bazarr holding at least six external subtitles, none forced or currently synced, across movies and episodes, `bazarrbulksync sync --yes` is stopped with Ctrl-C after two are reported `synced` and then run again to its end. Bazarr's job queue never held more than one sync from the tool; Bazarr's history holds exactly one new sync event for each of the six; and a third run reports all six skipped as currently synced and submits nothing. Repeated on other subtitles with `--concurrency 2`, the queue at some moment holds two of the tool's syncs and never three.
-- A subtitle whose sync Bazarr cannot complete (for example, one requested against an audio track the video lacks) is reported `failed`, never `synced`, and the run exits nonzero. The next plain `sync` skips it, naming the earlier failure, and exits zero. `sync --retry-failed` submits it again; so does a plain `sync` after a new subtitle is uploaded to the same path through Bazarr; and so does a plain `sync`, with the same state file, against a second Bazarr server holding a subtitle at the same path.
-- Bazarr is restarted while a sync from a running `bazarrbulksync sync --yes` is in its queue and comes back within 5 minutes: that subtitle is reported `unconfirmed`, the run goes on to the remaining subtitles, the state file holds no failure for it, and the next run submits it. When instead the network between the tool and Bazarr is cut for one minute with a sync in the queue, the tool submits nothing meanwhile and reports that subtitle `synced` once Bazarr finishes it.
+- Against a Bazarr holding at least six external subtitles, none forced, currently synced, or with a recorded failure, across movies and episodes, `bazarrbulksync sync --yes` is stopped with Ctrl-C after two are reported `synced` and then run again to its end. Bazarr's job queue never held more than one sync from the same run; Bazarr's history holds exactly one new sync event for each of the six; and a third run reports all six skipped as currently synced and submits nothing. Repeated on other subtitles with `--concurrency 2`, the queue at some moment holds two syncs from one run and never three.
+- A subtitle whose sync Bazarr accepts but cannot complete (for example, one requested against an audio track the video lacks) is reported `failed`, never `synced`, and the run exits nonzero. The next plain `sync` skips it, naming the earlier failure, and exits zero. Starting each time with that failure recorded, `sync --retry-failed` submits it again; so does a plain `sync` after a new subtitle is uploaded to the same path through Bazarr; and so does a plain `sync`, with the same state file, against a second Bazarr server holding a subtitle at the same path that is not currently synced.
+- Bazarr is restarted while a sync from a running `bazarrbulksync sync --yes` is still pending in its queue and comes back within 5 minutes: that subtitle is reported `unconfirmed`, the run goes on to the remaining subtitles, the state file holds no failure for it, and the next run submits it. When instead the network between the tool and Bazarr is cut for one minute with a sync in the queue, the tool submits nothing meanwhile and reports that subtitle `synced` once Bazarr records its sync.
 - `bazarrbulksync delete`, `bazarrbulksync delete --yes`, and `bazarrbulksync delete --language es` with standard input not a terminal each exit nonzero and leave `list` output unchanged. `delete --language es --dry-run` prints exactly the subtitles `list --language es` prints and deletes none. `delete --language es --yes` leaves `list --language es` empty and the `list` output for every other language identical to before.
-- `bazarrbulksync fix remove-tags --title <one title> --yes` leaves that title's subtitle files without style tags and every other title's subtitle files byte-for-byte unchanged. Each other fix name of F10, run on a subtitle containing what it removes or corrects, changes that file accordingly.
+- `bazarrbulksync fix remove-tags --title <one title> --yes`, for a title whose subtitle files are all SRT, leaves that title's subtitle files without style tags and every other title's subtitle files byte-for-byte unchanged. Each other fix name of F10, run on an SRT subtitle containing what it removes or corrects (for `remove-hi`, one G25 does not skip), changes that file accordingly.
