@@ -3,6 +3,7 @@ package main_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -32,23 +33,25 @@ func TestTestbed(t *testing.T) {
 		}
 		lines, _, _ := strings.Cut(r.stdout, "\n\n")
 		var printed []string
+		seen := map[bazarr.Subtitle]bool{}
 		for _, l := range strings.Split(lines, "\n") {
-			i := slices.IndexFunc(m.Subtitles, func(s bazarr.Subtitle) bool { return strings.HasSuffix(l, "  "+s.Path) })
+			// A file holding two episodes is two subtitles of one path, told
+			// apart by the episode the line opens with.
+			i := slices.IndexFunc(m.Subtitles, func(s bazarr.Subtitle) bool {
+				return strings.HasSuffix(l, "  "+s.Path) && strings.HasPrefix(l, s.Title+" "+videoOf(s)+"  ")
+			})
 			if i < 0 {
-				t.Errorf("line %q names no subtitle the bed placed", l)
+				t.Errorf("line %q names no subtitle the bed placed, opening with its title and video", l)
 				continue
 			}
-			s := m.Subtitles[i]
-			printed = append(printed, s.Path)
-			id := fmt.Sprintf("[movie %d]", s.MovieID)
-			if s.Type == bazarr.TypeEpisode {
-				id = fmt.Sprintf("[series %d] S%02dE%02d", s.SeriesID, s.Season, s.Episode)
-			}
-			if named := strings.TrimSuffix(l, "  "+s.Path); !strings.HasPrefix(named, s.Title+" "+id) {
-				t.Errorf("line %q does not open with the title and %s", l, id)
+			if s := m.Subtitles[i]; seen[s] {
+				t.Errorf("a second line for %s of %s", s.Path, videoOf(s))
+			} else {
+				seen[s] = true
+				printed = append(printed, s.Path)
 			}
 		}
-		if !sameSet(printed, shown) || !sameSet(printed, paths(m.Subtitles)) {
+		if !samePaths(printed, shown) || !samePaths(printed, paths(m.Subtitles)) {
 			t.Errorf("lines for %v,\nwant exactly one for each placed file %v,\nwhich Bazarr shows as %v", printed, paths(m.Subtitles), shown)
 		}
 		for _, video := range m.Embedded {
@@ -62,20 +65,8 @@ func TestTestbed(t *testing.T) {
 	})
 
 	t.Run("json", func(t *testing.T) {
-		got := listJSON(t, m)
-		var printed []string
-		for _, obj := range got {
-			printed = append(printed, obj.Path)
-			i := slices.IndexFunc(m.Subtitles, func(s bazarr.Subtitle) bool { return s.Path == obj.Path })
-			if i < 0 {
-				t.Errorf("object for %s, which the bed did not place", obj.Path)
-				continue
-			}
-			if want := objectOf(m.Subtitles[i]); !equalObjects(obj, want) {
-				t.Errorf("object %+v, want %+v", obj, want)
-			}
-		}
-		if !sameSet(printed, shown) || len(printed) != len(m.Subtitles) {
+		printed := placedListed(t, m)
+		if !samePaths(paths(printed), shown) || !sameSubtitles(printed, m.Subtitles) {
 			t.Errorf("objects for %v, want one for each path Bazarr shows %v", printed, shown)
 		}
 	})
@@ -100,24 +91,30 @@ func TestTestbed(t *testing.T) {
 	}
 	for _, p := range predictions {
 		t.Run(strings.Join(p.args, " "), func(t *testing.T) {
-			var want []string
+			var want []bazarr.Subtitle
 			for _, s := range m.Subtitles {
 				if p.matches(s) {
-					want = append(want, s.Path)
+					want = append(want, s)
 				}
 			}
 			if len(want) == 0 || len(want) == len(m.Subtitles) {
 				t.Fatalf("the bed's library does not tell this option apart: %d of %d subtitles", len(want), len(m.Subtitles))
 			}
-			var printed []string
-			for _, obj := range listJSON(t, m, p.args...) {
-				printed = append(printed, obj.Path)
-			}
-			if !sameSet(printed, want) {
+			if printed := placedListed(t, m, p.args...); !sameSubtitles(printed, want) {
 				t.Errorf("selected %v, want %v", printed, want)
 			}
 		})
 	}
+
+	t.Run("second server", func(t *testing.T) {
+		first, second := listJSON(t, m), listJSON(t, m.OnSecond())
+		if !slices.EqualFunc(first, second, equalObjects) {
+			t.Errorf("the second Bazarr lists\n%+v\nthe first\n%+v\nwant the same library at the same paths", second, first)
+		}
+		if m.Second.APIKey == m.APIKey || m.Second.URL == m.URL {
+			t.Errorf("the second Bazarr shares the first's key or address")
+		}
+	})
 
 	t.Run("wrong address or key", func(t *testing.T) {
 		for name, c := range map[string]struct{ url, key string }{
@@ -203,12 +200,69 @@ func paths(subs []bazarr.Subtitle) []string {
 	return out
 }
 
-// sameSet reports whether a and b hold the same paths, each once.
-func sameSet(a, b []string) bool {
+// samePaths reports whether a and b hold the same paths, each as often:
+// once, or once per episode of a file holding several.
+func samePaths(a, b []string) bool {
 	a, b = slices.Clone(a), slices.Clone(b)
 	slices.Sort(a)
 	slices.Sort(b)
-	return slices.Equal(a, b) && len(slices.Compact(a)) == len(b)
+	return slices.Equal(a, b)
+}
+
+// videoOf is how `list` names s's video after its title.
+func videoOf(s bazarr.Subtitle) string {
+	if s.Type == bazarr.TypeEpisode {
+		return fmt.Sprintf("[series %d] S%02dE%02d", s.SeriesID, s.Season, s.Episode)
+	}
+	return fmt.Sprintf("[movie %d]", s.MovieID)
+}
+
+// placedAt returns the subtitles the bed placed at path: one, or one per
+// episode of a file holding several.
+func placedAt(m bed.Manifest, path string) []bazarr.Subtitle {
+	var out []bazarr.Subtitle
+	for _, s := range m.Subtitles {
+		if s.Path == path {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// sameSubtitles reports whether a and b hold the same subtitles, each as
+// often.
+func sameSubtitles(a, b []bazarr.Subtitle) bool {
+	order := func(x, y bazarr.Subtitle) int { return strings.Compare(fmt.Sprintf("%+v", x), fmt.Sprintf("%+v", y)) }
+	a, b = slices.Clone(a), slices.Clone(b)
+	slices.SortFunc(a, order)
+	slices.SortFunc(b, order)
+	return slices.Equal(a, b)
+}
+
+// placedListed returns, for each object `list --json` with args prints, the
+// subtitle the bed placed that it is, failing the check on an object that is
+// none of them.
+func placedListed(t *testing.T, m bed.Manifest, args ...string) []bazarr.Subtitle {
+	t.Helper()
+	var out []bazarr.Subtitle
+	for _, obj := range listJSON(t, m, args...) {
+		s, ok := placedAs(m, obj)
+		if !ok {
+			t.Fatalf("list --json %v printed %+v, which is none of the subtitles the bed placed at its path %+v", args, obj, placedAt(m, obj.Path))
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+// placedAs returns the subtitle the bed placed whose F7 object is obj.
+func placedAs(m bed.Manifest, obj object) (bazarr.Subtitle, bool) {
+	for _, s := range placedAt(m, obj.Path) {
+		if equalObjects(objectOf(s), obj) {
+			return s, true
+		}
+	}
+	return bazarr.Subtitle{}, false
 }
 
 // pathsInAnswer returns every subtitle path that is not null in Bazarr's
@@ -228,4 +282,32 @@ func pathsInAnswer(t *testing.T, m bed.Manifest) []string {
 		}
 	}
 	return out
+}
+
+// changingSets are the switches, each beside bed.EnvVar, of the sets of
+// checks that change the bed. Each set needs a fresh bed, so no two run in
+// one invocation; a new set adds its switch here.
+var changingSets = []string{changesVar, syncVar, pathsVar}
+
+// changingBed loads the bed for the changing set whose switch is mine. It
+// skips without the bed or without that switch, and fails while another
+// changing set's switch is set too.
+func changingBed(t *testing.T, mine string) bed.Manifest {
+	t.Helper()
+	m, ok, err := bed.Load()
+	if !ok {
+		t.Skipf("no test bed: set %s to the file `go run ./testbed up` writes", bed.EnvVar)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if os.Getenv(mine) != "1" {
+		t.Skipf("these checks change the bed: set %s=1 to run them", mine)
+	}
+	for _, other := range changingSets {
+		if other != mine && os.Getenv(other) == "1" {
+			t.Fatalf("%s and %s are both set: each set of checks that changes the bed needs a fresh bed, so run them apart", mine, other)
+		}
+	}
+	return m
 }

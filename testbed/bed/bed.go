@@ -28,14 +28,18 @@ const EnvVar = "BAZARRBULKSYNC_TESTBED"
 type Manifest struct {
 	URL    string
 	APIKey string
+	// Second is a second Bazarr showing the same library at the same paths,
+	// with its own history and key; OnSecond reads the bed through it.
+	Second Server
 	// BazarrImage is the image Bazarr runs from.
 	BazarrImage string
 	// Movies and Series are every movie and series the bed added, in the
 	// order Bazarr lists them; the IDs are Radarr's and Sonarr's.
 	Movies []Video
 	Series []Video
-	// Subtitles are the external subtitle files placed, as Bazarr's client
-	// hands them out, the path byte for byte.
+	// Subtitles are the external subtitles placed, as Bazarr's client hands
+	// them out, the path byte for byte: one per file and video, so a file
+	// holding two episodes is two subtitles of one path.
 	Subtitles []bazarr.Subtitle
 	// Embedded names the videos the bed gave an embedded subtitle track, by
 	// their video file's path.
@@ -54,6 +58,20 @@ type Manifest struct {
 // file holds Before, and the fix leaves After where Before was.
 type Planted struct {
 	Path, Fix, Before, After string
+}
+
+// Server is one Bazarr of the bed: its address from this machine, its API
+// key, and its container.
+type Server struct {
+	URL, APIKey, Container string
+}
+
+// OnSecond returns the manifest as seen through the second Bazarr: its
+// address, key, and container in place of the first's.
+func (m Manifest) OnSecond() Manifest {
+	m.URL, m.APIKey, m.Container = m.Second.URL, m.Second.APIKey, m.Second.Container
+	m.Second = Server{}
+	return m
 }
 
 // Video is a movie or a series as Radarr or Sonarr added it.
@@ -76,7 +94,11 @@ func Load() (m Manifest, ok bool, err error) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return Manifest{}, true, fmt.Errorf("%s: %s is not a test bed file: %w", EnvVar, path, err)
 	}
-	if m.Container == "" || len(m.Subtitles) == 0 || len(m.Placed) != len(m.Subtitles) {
+	files := map[string]bool{}
+	for _, s := range m.Subtitles {
+		files[s.Path] = true
+	}
+	if m.Container == "" || m.Second.URL == "" || m.Second.APIKey == "" || m.Second.Container == "" || len(m.Subtitles) == 0 || len(m.Placed) != len(files) {
 		return Manifest{}, true, fmt.Errorf("%s: %s was written by an older bring-up; run `go run ./testbed up`", EnvVar, path)
 	}
 	return m, true, nil

@@ -100,7 +100,19 @@ type series struct {
 
 type episode struct {
 	season, number int
-	video          video
+	// through is the last episode a file holding several consecutive
+	// episodes holds, from number on; 0 for a file of one episode.
+	through int
+	video   video
+}
+
+// numbers returns the episode numbers e's file holds.
+func (e episode) numbers() []int {
+	out := []int{e.number}
+	for n := e.number + 1; n <= e.through; n++ {
+		out = append(out, n)
+	}
+	return out
 }
 
 const (
@@ -152,26 +164,34 @@ var movies = []movie{
 // title. Only italic and underline: Bazarr's plain rewrite drops bold and
 // font tags by itself, so their absence after a fix would show nothing.
 var theSeries = series{75932, tvRoot + "/Fawlty Towers", []episode{
-	{1, 1, video{path: tvRoot + "/Fawlty Towers/Season 01/Fawlty Towers - S01E01.mkv", source: "sintel.mkv",
+	{1, 1, 0, video{path: tvRoot + "/Fawlty Towers/Season 01/Fawlty Towers - S01E01.mkv", source: "sintel.mkv",
 		subs: []subtitleFile{
 			{suffix: ".en.srt", source: "sintel_en.srt", language: "en", edits: []edit{
 				{"Thank you.", "<i>Thank you.</i>", "remove-tags", "<i>Thank you.</i>", "Thank you."}}},
 			{suffix: ".fr.srt", source: "sintel_fr.srt", language: "fr", edits: []edit{
 				{"Merci.", "<u>Merci.</u>", "remove-tags", "<u>Merci.</u>", "Merci."}}},
 		}}},
-	{1, 2, video{path: tvRoot + "/Fawlty Towers/Season 01/Fawlty Towers - S01E02.mkv", source: "tos.mkv",
+	{1, 2, 0, video{path: tvRoot + "/Fawlty Towers/Season 01/Fawlty Towers - S01E02.mkv", source: "tos.mkv",
 		subs: []subtitleFile{
 			{suffix: ".en.srt", source: "TOS-en.srt", language: "en", edits: []edit{
 				{"You're a jerk, Thom.", "<i>You're a jerk</i>, Thom.", "remove-tags", "<i>You're a jerk</i>, Thom.", "You're a jerk, Thom."}}},
 			{suffix: ".es.srt", source: "TOS-es.srt", language: "es", edits: []edit{
 				{"Eres un imbécil, Thom.", "<i>Eres un imbécil, Thom.</i>", "remove-tags", "<i>Eres un imbécil, Thom.</i>", "Eres un imbécil, Thom."}}},
 		}}},
-	{2, 1, video{path: tvRoot + "/Fawlty Towers/Season 02/Fawlty Towers - S02E01.mkv", source: "tos.mkv",
+	{2, 1, 0, video{path: tvRoot + "/Fawlty Towers/Season 02/Fawlty Towers - S02E01.mkv", source: "tos.mkv",
 		subs: []subtitleFile{
 			{suffix: ".en.srt", source: "TOS-en.srt", language: "en", edits: []edit{
 				{"You're a jerk, Thom.", "<u>You're a jerk, Thom.</u>", "remove-tags", "<u>You're a jerk, Thom.</u>", "You're a jerk, Thom."}}},
 			{suffix: ".de.srt", source: "TOS-de.srt", language: "de", edits: []edit{
 				{"Du bist ein Vollidiot, Thom.", "<i>Du bist ein Vollidiot, Thom.</i>", "remove-tags", "<i>Du bist ein Vollidiot, Thom.</i>", "Du bist ein Vollidiot, Thom."}}},
+		}}},
+	// One file holding two episodes: Bazarr shows its subtitle under each,
+	// at one path. French, so that the English and Spanish sets other
+	// checks count stay as they are.
+	{2, 2, 3, video{path: tvRoot + "/Fawlty Towers/Season 02/Fawlty Towers - S02E02E03.mkv", source: "tos.mkv",
+		subs: []subtitleFile{
+			{suffix: ".fr.srt", source: "TOS-fr-orig.srt", language: "fr", edits: []edit{
+				{"T'es un salaud, Thom.", "<i>T'es un salaud, Thom.</i>", "remove-tags", "<i>T'es un salaud, Thom.</i>", "T'es un salaud, Thom."}}},
 		}}},
 }}
 

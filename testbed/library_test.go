@@ -37,6 +37,9 @@ func TestLibraryPlan(t *testing.T) {
 	if len(seasons) < 2 {
 		t.Errorf("the series has episodes in %d seasons, want at least 2", len(seasons))
 	}
+	if !slices.ContainsFunc(theSeries.episodes, func(e episode) bool { return len(e.numbers()) == 2 }) {
+		t.Errorf("no episode file holds two episodes")
+	}
 
 	downloaded := map[string]bool{}
 	for _, d := range downloads {

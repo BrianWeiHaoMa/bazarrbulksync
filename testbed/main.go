@@ -45,24 +45,29 @@ const (
 
 // A service of the bed.
 type service struct {
-	name   string
-	image  string
-	port   int
-	config string // its configuration volume
+	name      string
+	image     string
+	port      int    // where it listens in its container
+	published int    // its port on this machine
+	config    string // its configuration volume
 }
 
 var (
-	bazarrService = service{"bazarr", bazarrImage, 6767, prefix + "-bazarr-config"}
-	sonarrService = service{"sonarr", sonarrImage, 8989, prefix + "-sonarr-config"}
-	radarrService = service{"radarr", radarrImage, 7878, prefix + "-radarr-config"}
-	services      = []service{bazarrService, sonarrService, radarrService}
+	bazarrService = service{"bazarr", bazarrImage, 6767, 6767, prefix + "-bazarr-config"}
+	// A second Bazarr on the same library: the same media volume, Sonarr,
+	// and Radarr, so it shows the same subtitles at the same paths, with its
+	// own configuration volume, hence its own history and key.
+	secondBazarrService = service{"bazarr2", bazarrImage, 6767, 6768, prefix + "-bazarr2-config"}
+	sonarrService       = service{"sonarr", sonarrImage, 8989, 8989, prefix + "-sonarr-config"}
+	radarrService       = service{"radarr", radarrImage, 7878, 7878, prefix + "-radarr-config"}
+	services            = []service{bazarrService, secondBazarrService, sonarrService, radarrService}
 )
 
 func (s service) container() string { return prefix + "-" + s.name }
 
 // url is the service's address from this machine; its port is published on
 // localhost only.
-func (s service) url() string { return fmt.Sprintf("http://localhost:%d", s.port) }
+func (s service) url() string { return fmt.Sprintf("http://localhost:%d", s.published) }
 
 // manifestPath is where up writes the bed's file, relative to the
 // repository root; testbed/.gitignore keeps it out of Git.
@@ -145,7 +150,7 @@ func up(ctx context.Context) error {
 		if err := docker(ctx, nil, "run", "-d", "--name", s.container(), "--network", network, "--network-alias", s.name,
 			"-e", "PUID=911", "-e", "PGID=1001", "-e", "TZ=Etc/UTC",
 			"-v", s.config+":/config", "-v", mediaVolume+":/media",
-			"-p", fmt.Sprintf("127.0.0.1:%d:%d", s.port, s.port), s.image); err != nil {
+			"-p", fmt.Sprintf("127.0.0.1:%d:%d", s.published, s.port), s.image); err != nil {
 			return err
 		}
 	}
@@ -159,7 +164,7 @@ func up(ctx context.Context) error {
 	if err := m.Write(manifestPath); err != nil {
 		return err
 	}
-	logf("Bazarr answers at %s; its address and API key are in %s", m.URL, manifestPath)
+	logf("Bazarr answers at %s and %s; their addresses and API keys are in %s", m.URL, m.Second.URL, manifestPath)
 	return nil
 }
 
@@ -188,8 +193,8 @@ func keyEnv(keys map[string]string) []string {
 	return env
 }
 
-// configScript writes the three services' first configuration: Sonarr's
-// and Radarr's API keys, and Bazarr's key and its links to both. Bazarr's
+// configScript writes the services' first configuration: Sonarr's and
+// Radarr's API keys, and each Bazarr's key and its links to both. Bazarr's
 // embedded_subs_show_desired is off because, left on, its API drops every
 // embedded track of a video without a language profile (api/utils.py at
 // v1.6.2), and the embedded track is there to show the client leaves it out.
@@ -204,24 +209,27 @@ func configScript() string {
 			"  <AnalyticsEnabled>False</AnalyticsEnabled>\n  <UpdateMechanism>Docker</UpdateMechanism>\n"+
 			"  <LogLevel>info</LogLevel>\n</Config>\nEND\n", s.name, keyVar(s), s.port)
 	}
-	return arr(sonarrService) + arr(radarrService) + fmt.Sprintf(`mkdir -p /config-bazarr/config
-cat > /config-bazarr/config/config.yaml <<END
+	bazarr := func(s service) string {
+		return fmt.Sprintf(`mkdir -p /config-%[1]s/config
+cat > /config-%[1]s/config/config.yaml <<END
 auth:
-  apikey: "$BAZARR_KEY"
+  apikey: "$%[2]s"
 general:
   use_sonarr: true
   use_radarr: true
   embedded_subs_show_desired: false
 sonarr:
   ip: sonarr
-  port: %d
+  port: %[3]d
   apikey: "$SONARR_KEY"
 radarr:
   ip: radarr
-  port: %d
+  port: %[4]d
   apikey: "$RADARR_KEY"
 END
-`, sonarrService.port, radarrService.port)
+`, s.name, keyVar(s), sonarrService.port, radarrService.port)
+	}
+	return arr(sonarrService) + arr(radarrService) + bazarr(bazarrService) + bazarr(secondBazarrService)
 }
 
 // newKey returns a new API key: 32 lowercase hexadecimal digits, the form

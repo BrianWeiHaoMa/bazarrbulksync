@@ -43,15 +43,18 @@ func provision(ctx context.Context, keys map[string]string) (bed.Manifest, error
 		}
 	}
 	m := bed.Manifest{URL: bazarrService.url(), APIKey: keys["bazarr"], BazarrImage: bazarrImage,
-		Container: bazarrService.container(), Placed: map[string]string{}}
+		Container: bazarrService.container(), Placed: map[string]string{},
+		Second: bed.Server{URL: secondBazarrService.url(), APIKey: keys[secondBazarrService.name], Container: secondBazarrService.container()}}
 	if err := addMovies(ctx, radarr, &m); err != nil {
 		return bed.Manifest{}, err
 	}
 	if err := addSeries(ctx, sonarr, &m); err != nil {
 		return bed.Manifest{}, err
 	}
-	if err := indexInBazarr(ctx, m); err != nil {
-		return bed.Manifest{}, err
+	for _, on := range []bed.Manifest{m, m.OnSecond()} {
+		if err := indexInBazarr(ctx, on); err != nil {
+			return bed.Manifest{}, fmt.Errorf("%s: %w", on.URL, err)
+		}
 	}
 	for _, s := range m.Subtitles {
 		data, err := m.ReadFile(s.Path)
@@ -160,8 +163,10 @@ func addSeries(ctx context.Context, sonarr arr, m *bed.Manifest) error {
 			}
 		}
 		for _, e := range theSeries.episodes {
-			if ids[[2]int{e.season, e.number}] == 0 {
-				return false, nil
+			for _, n := range e.numbers() {
+				if ids[[2]int{e.season, n}] == 0 {
+					return false, nil
+				}
 			}
 		}
 		return true, nil
@@ -170,21 +175,28 @@ func addSeries(ctx context.Context, sonarr arr, m *bed.Manifest) error {
 	}
 	m.Series = append(m.Series, bed.Video{ID: added.ID, Title: added.Title})
 	for _, e := range theSeries.episodes {
-		addVideo(m, e.video, bazarr.Subtitle{Type: bazarr.TypeEpisode, SeriesID: added.ID,
-			EpisodeID: ids[[2]int{e.season, e.number}], Title: added.Title, Season: e.season, Episode: e.number})
+		var of []bazarr.Subtitle
+		for _, n := range e.numbers() {
+			of = append(of, bazarr.Subtitle{Type: bazarr.TypeEpisode, SeriesID: added.ID,
+				EpisodeID: ids[[2]int{e.season, n}], Title: added.Title, Season: e.season, Episode: n})
+		}
+		addVideo(m, e.video, of...)
 	}
 	return nil
 }
 
-// addVideo records v's subtitle files, each as the subtitle of the video
-// that of describes.
-func addVideo(m *bed.Manifest, v video, of bazarr.Subtitle) {
+// addVideo records v's subtitle files, each as a subtitle of every video
+// that of describes: a file holding two episodes has one subtitle under
+// each, at one path ("Path and video ID together identify it").
+func addVideo(m *bed.Manifest, v video, of ...bazarr.Subtitle) {
 	for _, s := range v.subs {
-		sub := of
-		sub.Language, sub.HI, sub.Forced, sub.Path = s.language, s.hi, s.forced, subtitlePath(v, s)
-		m.Subtitles = append(m.Subtitles, sub)
+		for _, video := range of {
+			sub := video
+			sub.Language, sub.HI, sub.Forced, sub.Path = s.language, s.hi, s.forced, subtitlePath(v, s)
+			m.Subtitles = append(m.Subtitles, sub)
+		}
 		for _, e := range s.edits {
-			m.Planted = append(m.Planted, bed.Planted{Path: sub.Path, Fix: e.fix, Before: e.before, After: e.after})
+			m.Planted = append(m.Planted, bed.Planted{Path: subtitlePath(v, s), Fix: e.fix, Before: e.before, After: e.after})
 		}
 	}
 	if v.embedded {
@@ -244,7 +256,20 @@ func indexInBazarr(ctx context.Context, m bed.Manifest) error {
 	if err != nil && len(diffs) > 0 {
 		return fmt.Errorf("%w:\n  %s", err, strings.Join(diffs, "\n  "))
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	// Without an ID, each history call answers every video's events.
+	for _, call := range []string{"movies/history", "episodes/history"} {
+		var answer struct{ Data []json.RawMessage }
+		if err := m.Get(call, &answer); err != nil {
+			return err
+		}
+		if len(answer.Data) > 0 {
+			return fmt.Errorf("%s holds %d events once provisioned, want none", call, len(answer.Data))
+		}
+	}
+	return nil
 }
 
 // bazarrPost sends a form to one of Bazarr's API calls and expects success.

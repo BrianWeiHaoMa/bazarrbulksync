@@ -37,8 +37,8 @@ type Limits struct {
 // DefaultLimits are the limits measured against the test bed's Bazarr 1.6.2
 // (T1): idle and while it ran one and four syncs, every read was answered
 // within 130 ms and every change within 163 ms (a delete; a fix 152 ms, a
-// sync submission 6 ms), the slowest of each while syncs ran. The bed holds
-// three movies and three episodes, and the library read grows with the
+// sync submission 6 ms), the slowest of each while syncs ran. The bed held
+// three movies and three episodes then, and the library read grows with the
 // library (about 0.4 ms a movie there), so the margin, about 400 times, is
 // for libraries thousands of times larger on slower machines. A shorter read
 // limit would have a large library's read retried until Bazarr counts as

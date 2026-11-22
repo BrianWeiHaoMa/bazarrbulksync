@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
-	"github.com/BrianWeiHaoMa/bazarrbulksync/testbed/bed"
 )
 
 // syncVar must be 1, beside BAZARRBULKSYNC_TESTBED, for TestBedSync to run:
@@ -29,19 +28,7 @@ const syncVar = "BAZARRBULKSYNC_TESTBED_SYNC"
 // no sync event, so that none passes because another ran first; run alone
 // or in this order on a fresh bed, each passes.
 func TestBedSync(t *testing.T) {
-	m, ok, err := bed.Load()
-	if !ok {
-		t.Skipf("no test bed: set %s to the file `go run ./testbed up` writes", bed.EnvVar)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	if os.Getenv(syncVar) != "1" {
-		t.Skipf("these checks change the bed: set %s=1 to run them", syncVar)
-	}
-	if os.Getenv(changesVar) == "1" {
-		t.Fatalf("%s and %s are both set: each set of checks needs a fresh bed, so run them apart", syncVar, changesVar)
-	}
+	m := changingBed(t, syncVar)
 	b := newChangeBed(t, m)
 	q := watchQueue(t, m)
 
@@ -59,11 +46,13 @@ func TestBedSync(t *testing.T) {
 				want = append(want, "would sync  "+l)
 			}
 		}
-		for _, p := range paths(m.Subtitles) {
+		for _, s := range m.Subtitles {
 			if n := len(slices.DeleteFunc(slices.Clone(want), func(l string) bool {
-				return !strings.HasSuffix(l, "  "+p) && !strings.HasSuffix(l, "  "+p+"  (forced)")
+				_, l, _ = strings.Cut(l, "  ")
+				return !strings.HasPrefix(l, s.Title+" "+videoOf(s)+"  ") ||
+					!strings.HasSuffix(l, "  "+s.Path) && !strings.HasSuffix(l, "  "+s.Path+"  (forced)")
 			})); n != 1 {
-				t.Fatalf("list prints %d lines for %s, want 1", n, p)
+				t.Fatalf("list prints %d lines for %s of %s, want 1", n, s.Path, videoOf(s))
 			}
 		}
 		r := b.run(t, 0, "sync", "--dry-run", "--state-file", state)
@@ -153,7 +142,7 @@ func TestBedSync(t *testing.T) {
 				b.syncRequest(t, s, nil)
 			}
 		}
-		if !sameSet(submitted, paths(six)) {
+		if !samePaths(submitted, paths(six)) {
 			t.Errorf("the two runs sent syncs for %v, want one for each of %v", submitted, paths(six))
 		}
 		t.Logf("first run:\n%s\nsecond run:\n%s", first.stdout, second.stdout)
@@ -213,33 +202,10 @@ func TestBedSync(t *testing.T) {
 	})
 
 	t.Run("failed", func(t *testing.T) {
-		de := b.selected(t, "--language", "de", "--movies")
-		if len(de) != 1 {
-			t.Fatalf("the bed placed %d German movie subtitles, want 1", len(de))
-		}
-		sub := de[0]
-		b.needNoSync(t, sub)
 		state := filepath.Join(t.TempDir(), "state.json")
-		// The video has one audio track: Bazarr accepts the request and the
-		// sync it runs ends without a sync event.
-		args := []string{"sync", "--yes", "--language", "de", "--movies", "--reference", "a:5", "--state-file", state}
-		line := b.listLine(t, sub)
+		sub, args, line := b.recordFailure(t, state)
 
 		r := b.live(t, args, nil)
-		syncs := b.syncsOfLastRun()
-		b.sends(t, len(syncs))
-		if len(syncs) != 1 || syncs[0].status != 204 || syncs[0].query.Get("path") != sub.Path {
-			t.Fatalf("the run sent %v; want one sync of %s, accepted with 204", describe(syncs), sub.Path)
-		}
-		b.syncRequest(t, syncs[0], map[string]string{"reference": "a:5"})
-		if r.code == 0 || !strings.HasPrefix(r.stdout, "failed  "+line) || strings.Contains(r.stdout, "synced") {
-			t.Errorf("code %d, stdout %q, stderr %q; want %s reported failed, nonzero", r.code, r.stdout, r.stderr, sub.Path)
-		}
-		if !b.recorded(t, state, b.proxy, sub.Path) {
-			t.Errorf("the state file holds no failure for %s under %s", sub.Path, b.proxy)
-		}
-
-		r = b.live(t, args, nil)
 		b.sends(t, 0)
 		if r.code != 0 || r.stdout != "\nTotal: 1 of 1 selected subtitle\nskipped (earlier failure) 1\n" {
 			t.Errorf("the next plain run: code %d, stdout %q, stderr %q; want it skipped for its earlier failure, exit zero", r.code, r.stdout, r.stderr)
@@ -258,10 +224,47 @@ func TestBedSync(t *testing.T) {
 		if r.code == 0 || !strings.HasPrefix(r.stdout, "failed  "+line) {
 			t.Errorf("sync --retry-failed: code %d, stdout %q; want it failed again, nonzero", r.code, r.stdout)
 		}
+		if !b.recorded(t, state, b.proxy, sub.Path) {
+			t.Errorf("after it failed again the state file holds no failure for %s under %s", sub.Path, b.proxy)
+		}
 		if events := b.events(t, sub)[sub.Path]; len(events) != 0 {
 			t.Errorf("Bazarr's history holds sync events %v of %s, which the runs reported failed", events, sub.Path)
 		}
 	})
+}
+
+// recordFailure makes the failure of the third Done-when check on the one
+// German movie subtitle, which needs no sync event yet: `sync` with args,
+// its state file at state, against an audio track the video lacks, which
+// Bazarr accepts and runs without a sync event. It requires the subtitle
+// reported failed and recorded under the address of b's proxy, and returns
+// the subtitle, args, and the subtitle's list line.
+func (b *changeBed) recordFailure(t *testing.T, state string) (sub bazarr.Subtitle, args []string, line string) {
+	t.Helper()
+	de := b.selected(t, "--language", "de", "--movies")
+	if len(de) != 1 {
+		t.Fatalf("the bed placed %d German movie subtitles, want 1", len(de))
+	}
+	sub = de[0]
+	b.needNoSync(t, sub)
+	// The video has one audio track.
+	args = []string{"sync", "--yes", "--language", "de", "--movies", "--reference", "a:5", "--state-file", state}
+	line = b.listLine(t, sub)
+
+	r := b.live(t, args, nil)
+	syncs := b.syncsOfLastRun()
+	b.sends(t, len(syncs))
+	if len(syncs) != 1 || syncs[0].status != 204 || syncs[0].query.Get("path") != sub.Path {
+		t.Fatalf("the run sent %v; want one sync of %s, accepted with 204", describe(syncs), sub.Path)
+	}
+	b.syncRequest(t, syncs[0], map[string]string{"reference": "a:5"})
+	if r.code == 0 || !strings.HasPrefix(r.stdout, "failed  "+line) || strings.Contains(r.stdout, "synced") {
+		t.Errorf("code %d, stdout %q, stderr %q; want %s reported failed, nonzero", r.code, r.stdout, r.stderr, sub.Path)
+	}
+	if !b.recorded(t, state, b.proxy, sub.Path) {
+		t.Fatalf("the state file holds no failure for %s under %s", sub.Path, b.proxy)
+	}
+	return sub, args, line
 }
 
 // selected returns the subtitles `list` selects with args, as the bed placed
@@ -270,7 +273,11 @@ func (b *changeBed) selected(t *testing.T, args ...string) []bazarr.Subtitle {
 	t.Helper()
 	var out []bazarr.Subtitle
 	for _, obj := range listJSON(t, b.Manifest, args...) {
-		out = append(out, b.subtitle(t, obj.Path))
+		s, ok := placedAs(b.Manifest, obj)
+		if !ok {
+			t.Fatalf("list --json printed %+v, which the bed did not place", obj)
+		}
+		out = append(out, s)
 	}
 	return out
 }
@@ -293,12 +300,30 @@ type historyEvent struct {
 	Time   string `json:"parsed_timestamp"`
 }
 
-// events returns, for each of subs, the times of the sync events Bazarr's
-// history of its video holds for its path, read from Bazarr directly.
+// events returns, for each of subs, the times of the sync events for its
+// path in the histories of every video the bed placed a subtitle at that
+// path for (a file holding two episodes is in both episodes' histories),
+// read from Bazarr directly.
 func (b *changeBed) events(t *testing.T, subs ...bazarr.Subtitle) map[string][]string {
 	t.Helper()
 	out := map[string][]string{}
 	for _, s := range subs {
+		out[s.Path] = []string{}
+		for _, e := range b.history(t, s.Path) {
+			if e.Action == 5 {
+				out[s.Path] = append(out[s.Path], e.Time)
+			}
+		}
+	}
+	return out
+}
+
+// history returns the events for path in the histories of every video the
+// bed placed a subtitle at path for, read from Bazarr directly.
+func (b *changeBed) history(t *testing.T, path string) []historyEvent {
+	t.Helper()
+	var out []historyEvent
+	for _, s := range placedAt(b.Manifest, path) {
 		call := fmt.Sprintf("movies/history?radarrid=%d", s.MovieID)
 		if s.Type == bazarr.TypeEpisode {
 			call = fmt.Sprintf("episodes/history?episodeid=%d", s.EpisodeID)
@@ -307,10 +332,9 @@ func (b *changeBed) events(t *testing.T, subs ...bazarr.Subtitle) map[string][]s
 		if err := b.Get(call, &answer); err != nil {
 			t.Fatal(err)
 		}
-		out[s.Path] = []string{}
 		for _, e := range answer.Data {
-			if e.Action == 5 && e.Path == s.Path {
-				out[s.Path] = append(out[s.Path], e.Time)
+			if e.Path == path {
+				out = append(out, e)
 			}
 		}
 	}
@@ -333,23 +357,31 @@ func sameEvents(a, b map[string][]string) bool {
 // subtitle under address.
 func (b *changeBed) recorded(t *testing.T, path, address, subtitle string) bool {
 	t.Helper()
+	_, ok := b.record(t, path, address, subtitle)
+	return ok
+}
+
+// record returns the event identities of the failure of subtitle the state
+// file at path holds under address, and whether it holds one.
+func (b *changeBed) record(t *testing.T, path, address, subtitle string) ([]string, bool) {
+	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Errorf("the state file: %v", err)
-		return false
+		return nil, false
 	}
 	var state struct {
 		Servers map[string]map[string][]string `json:"servers"`
 	}
 	if err := json.Unmarshal(data, &state); err != nil {
 		t.Errorf("the state file: %v", err)
-		return false
+		return nil, false
 	}
 	if strings.Contains(string(data), b.APIKey) {
 		t.Fatalf("the state file holds the API key (R2)")
 	}
-	_, ok := state.Servers[address][subtitle]
-	return ok
+	identities, ok := state.Servers[address][subtitle]
+	return identities, ok
 }
 
 // noFile reports a file at path.
@@ -406,11 +438,12 @@ func (b *changeBed) reportedSynced(t *testing.T, r result, syncs []*sentRequest)
 			for _, s := range b.Subtitles {
 				if strings.HasSuffix(l, "  "+s.Path) {
 					got = append(got, s.Path)
+					break
 				}
 			}
 		}
 	}
-	if !sameSet(got, want) {
+	if !samePaths(got, want) {
 		t.Errorf("the run printed synced lines for %v, want one for each subtitle it submitted, %v:\n%s", got, want, r.stdout)
 	}
 }
@@ -420,11 +453,17 @@ func (b *changeBed) reportedSynced(t *testing.T, r result, syncs []*sentRequest)
 // others (G16, the technical specification's table).
 func (b *changeBed) syncRequest(t *testing.T, req *sentRequest, extra map[string]string) {
 	t.Helper()
-	s := b.subtitle(t, req.query.Get("path"))
-	id := s.MovieID
-	if s.Type == bazarr.TypeEpisode {
-		id = s.EpisodeID
+	// Of a file holding two episodes, the subtitle of the episode sent.
+	at := placedAt(b.Manifest, req.query.Get("path"))
+	i := slices.IndexFunc(at, func(s bazarr.Subtitle) bool {
+		return req.query.Get("id") == strconv.Itoa(max(s.MovieID, s.EpisodeID))
+	})
+	if i < 0 {
+		t.Errorf("a sync of %v, which is none of the subtitles the bed placed", req.query)
+		return
 	}
+	s := at[i]
+	id := max(s.MovieID, s.EpisodeID)
 	title := map[bool]string{true: "True", false: "False"}
 	want := url.Values{"action": {"sync"}, "language": {s.Language}, "path": {s.Path}, "type": {string(s.Type)},
 		"id": {strconv.Itoa(id)}, "forced": {title[s.Forced]}, "hi": {title[s.HI]}}

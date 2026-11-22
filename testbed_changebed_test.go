@@ -223,7 +223,7 @@ func (b *changeBed) needProvisioned(t *testing.T, paths ...string) {
 		if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != b.Placed[p] {
 			t.Fatalf("%s is not as the bed placed it; run `go run ./testbed up` before these checks", p)
 		}
-		subs = append(subs, b.subtitle(t, p))
+		subs = append(subs, placedAt(b.Manifest, p)...)
 	}
 	b.needShown(t, subs...)
 }

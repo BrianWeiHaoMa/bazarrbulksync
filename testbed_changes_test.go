@@ -1,14 +1,12 @@
 package main_test
 
 import (
-	"os"
 	"regexp"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
-	"github.com/BrianWeiHaoMa/bazarrbulksync/testbed/bed"
 )
 
 // changesVar must be 1, beside BAZARRBULKSYNC_TESTBED, for TestBedChanges to
@@ -24,16 +22,7 @@ const changesVar = "BAZARRBULKSYNC_TESTBED_CHANGES"
 // what it needs is as the bed placed it, so that none passes because another
 // ran first; run alone or in this order on a fresh bed, each passes.
 func TestBedChanges(t *testing.T) {
-	m, ok, err := bed.Load()
-	if !ok {
-		t.Skipf("no test bed: set %s to the file `go run ./testbed up` writes", bed.EnvVar)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	if os.Getenv(changesVar) != "1" {
-		t.Skipf("these checks change the bed: set %s=1 to run them", changesVar)
-	}
+	m := changingBed(t, changesVar)
 	b := newChangeBed(t, m)
 
 	t.Run("refused", func(t *testing.T) {
@@ -179,7 +168,7 @@ func TestBedChanges(t *testing.T) {
 		}
 		b.corrected(t, planted, files, after, result)
 		listed := b.listedPaths(t)
-		if shown := pathsInAnswer(t, m); !sameSet(listed, shown) || !slices.Contains(shown, result) {
+		if shown := pathsInAnswer(t, m); !samePaths(listed, shown) || !slices.Contains(shown, result) {
 			t.Errorf("list names %v,\nBazarr shows %v; want the same, %s among them", listed, shown, result)
 		}
 		b.unchanged(t, files, after, lone.Path, result)
