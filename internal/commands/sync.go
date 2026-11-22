@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"errors"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/failurestore"
@@ -11,18 +10,13 @@ import (
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/selection"
 )
 
-// errOnlyDryRun refuses a real sync run, which is not built yet; nothing is
-// contacted.
-var errOnlyDryRun = errors.New("sync without --dry-run is not available in this build: only sync --dry-run runs; nothing changed")
-
-// runSync runs `sync` in the run the changing commands share. With
-// --dry-run it judges each selected subtitle in P2's order from Bazarr as
-// read just then and reports whether it would be submitted or why not
-// (G13), sending no changing request and writing no state file.
+// runSync runs `sync` in the run the changing commands share. Without
+// --dry-run it hands the selected subtitles to Bazarr as its slots allow
+// (runSyncs). With --dry-run it judges each selected subtitle in P2's
+// order from Bazarr as read just then and reports whether it would be
+// submitted or why not (G13), sending no changing request and writing no
+// state file.
 func runSync(ctx context.Context, conn bazarr.Connection, req *invocation.Request, rep *reporter.Reporter) error {
-	if !req.Change.DryRun {
-		return errOnlyDryRun
-	}
 	clock := conn.Clock
 	if clock == nil {
 		clock = bazarr.SystemClock{}
@@ -31,6 +25,9 @@ func runSync(ctx context.Context, conn bazarr.Connection, req *invocation.Reques
 		question: "Sync them",
 		run: func(ctx context.Context, c *bazarr.Client, subs []selection.Selected) error {
 			store := loadStore(req.Sync, conn.URL, rep)
+			if !req.Change.DryRun {
+				return runSyncs(ctx, c, clock, req.Sync, store, rep, subs)
+			}
 			for _, sel := range subs {
 				// A stop is noticed between subtitles too (G4).
 				if ctx.Err() != nil {

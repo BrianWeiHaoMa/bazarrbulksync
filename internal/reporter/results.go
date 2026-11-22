@@ -26,8 +26,11 @@ const (
 	WouldApply Outcome = "would apply"
 )
 
-// WouldSync is `sync --dry-run`'s outcome of a subtitle a run would submit (G13).
-const WouldSync Outcome = "would sync"
+// The outcomes of `sync` besides failed and unconfirmed (G19, G13).
+const (
+	Synced    Outcome = "synced"
+	WouldSync Outcome = "would sync"
+)
 
 // SkipReason is why a run skips a subtitle (P3).
 type SkipReason string

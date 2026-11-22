@@ -392,19 +392,3 @@ func TestSyncDryRunStop(t *testing.T) {
 	}
 	noChange(t, "a stop", srv)
 }
-
-// TestSyncOnlyDryRun: until the real run is built, sync without --dry-run
-// ends nonzero saying so, and contacts nothing.
-func TestSyncOnlyDryRun(t *testing.T) {
-	srv := fakebazarr.New(t, fakebazarr.Config{Library: syncLibrary()})
-	for _, args := range [][]string{{"sync"}, {"sync", "--yes"}, {"sync", "--yes", "--movies"}} {
-		o := runAgainst(t, srv, args...)
-		failed(t, strings.Join(args, " "), o)
-		if !strings.Contains(o.stderr, "--dry-run") {
-			t.Errorf("%q: standard error %q", args, o.stderr)
-		}
-	}
-	if n := len(srv.Requests()); n != 0 {
-		t.Errorf("the fake received %d requests, want none", n)
-	}
-}

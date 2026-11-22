@@ -125,3 +125,38 @@ func TestSyncDryRunDefaultStateFile(t *testing.T) {
 		t.Errorf("standard error %q", o.stderr)
 	}
 }
+
+// TestSyncRecordedFailure: a real run reads the recorded failures as the
+// dry run does: a recorded subtitle is not submitted and counts under
+// `earlier failure`; a file that is not a state file is named once and
+// every subtitle is treated as unrecorded; either way the file's bytes stay
+// as they were (G15, G21, G23).
+func TestSyncRecordedFailure(t *testing.T) {
+	srv := fakebazarr.New(t, fakebazarr.Config{Library: syncLibrary()})
+	state := filepath.Join(t.TempDir(), "state.json")
+	record(t, state, srv.URL, sintelEn)
+	before, _ := os.ReadFile(state)
+	s := startSyncState(t, srv, state, "--movie-id", "7", "--language", "en", "--no-hi")
+	o := s.finish(nil)
+	if n := len(syncsSent(srv)); n != 0 || o.code != 0 || !strings.Contains(o.stdout, "skipped (earlier failure) 1") {
+		t.Errorf("a recorded failure: %d syncs sent, exit %d\n%s", n, o.code, o.stdout)
+	}
+	if after, _ := os.ReadFile(state); string(after) != string(before) {
+		t.Errorf("the state file changed:\n%s", after)
+	}
+
+	srv = fakebazarr.New(t, fakebazarr.Config{Library: syncLibrary()})
+	notState := filepath.Join(t.TempDir(), "notes.json")
+	if err := os.WriteFile(notState, []byte(`{"servers": 1}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s = startSyncState(t, srv, notState, "--movie-id", "7", "--language", "en", "--no-hi")
+	ran := map[string]bool{}
+	o = s.finish(func() { runSubmitted(t, srv, ran, "11/22/26 08:15:02") })
+	if strings.Count(o.stderr, "cannot be used") != 1 || outcomeOf(t, o.stdout, sintelEn) != "synced" || o.code != 0 {
+		t.Errorf("not a state file: exit %d\n%s%s", o.code, o.stdout, o.stderr)
+	}
+	if after, _ := os.ReadFile(notState); string(after) != `{"servers": 1}` {
+		t.Errorf("the file changed: %s", after)
+	}
+}

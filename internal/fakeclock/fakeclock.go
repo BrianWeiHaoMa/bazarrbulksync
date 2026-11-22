@@ -123,7 +123,15 @@ func (c *Clock) Advance(d time.Duration) {
 // it sleeps for.
 func (c *Clock) WaitSleep() time.Duration {
 	c.t.Helper()
-	return c.wait("a sleep", func() (time.Duration, bool) {
+	d, _ := c.WaitSleepUnless(nil)
+	return d
+}
+
+// WaitSleepUnless is WaitSleep, except that it returns false as soon as
+// ended is closed, such as when the code under test has returned.
+func (c *Clock) WaitSleepUnless(ended <-chan struct{}) (time.Duration, bool) {
+	c.t.Helper()
+	return c.wait("a sleep", ended, func() (time.Duration, bool) {
 		for _, tm := range c.timers {
 			if tm.sleep {
 				return tm.when.Sub(c.now), true
@@ -137,7 +145,7 @@ func (c *Clock) WaitSleep() time.Duration {
 // request's time limit, and returns how long until it fires.
 func (c *Clock) WaitTimer() time.Duration {
 	c.t.Helper()
-	return c.wait("a timer", func() (time.Duration, bool) {
+	d, _ := c.wait("a timer", nil, func() (time.Duration, bool) {
 		for _, tm := range c.timers {
 			if !tm.sleep {
 				return tm.when.Sub(c.now), true
@@ -145,9 +153,12 @@ func (c *Clock) WaitTimer() time.Duration {
 		}
 		return 0, false
 	})
+	return d
 }
 
-func (c *Clock) wait(what string, found func() (time.Duration, bool)) time.Duration {
+// wait blocks until found finds a timer, or until ended, which may be nil,
+// is closed.
+func (c *Clock) wait(what string, ended <-chan struct{}, found func() (time.Duration, bool)) (time.Duration, bool) {
 	c.t.Helper()
 	deadline := time.NewTimer(guard)
 	defer deadline.Stop()
@@ -157,10 +168,12 @@ func (c *Clock) wait(what string, found func() (time.Duration, bool)) time.Durat
 		ch := c.changed
 		c.mu.Unlock()
 		if ok {
-			return d
+			return d, true
 		}
 		select {
 		case <-ch:
+		case <-ended:
+			return 0, false
 		case <-deadline.C:
 			c.t.Fatalf("fakeclock: nothing waited on %s within %s", what, guard)
 		}

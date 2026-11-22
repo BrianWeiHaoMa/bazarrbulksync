@@ -173,6 +173,9 @@ type Server struct {
 	lastJobID    int
 	histories    map[videoKey][]Event
 	repeatEvents bool
+	// inFlight counts the requests being answered, and mostInFlight the
+	// most at once; guarded by mu.
+	inFlight, mostInFlight int
 }
 
 // New starts a fake Bazarr, closed when the test ends.
@@ -246,6 +249,13 @@ func (s *Server) Requests() []Request {
 	return slices.Clone(s.requests)
 }
 
+// MostAtOnce is the most requests the fake was answering at one moment.
+func (s *Server) MostAtOnce() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.mostInFlight
+}
+
 // WaitHeld blocks until a request is being held, and returns it.
 func (s *Server) WaitHeld() Request {
 	s.t.Helper()
@@ -264,6 +274,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	req := Request{Method: r.Method, Path: r.URL.EscapedPath(), RawQuery: r.URL.RawQuery,
 		Header: r.Header.Clone(), Body: string(body), N: len(s.requests) + 1}
 	s.requests = append(s.requests, req)
+	s.inFlight++
+	s.mostInFlight = max(s.mostInFlight, s.inFlight)
+	defer func() {
+		s.mu.Lock()
+		s.inFlight--
+		s.mu.Unlock()
+	}()
 	respond := s.respond
 	version, startTime := s.cfg.Version, s.cfg.StartTime
 	s.mu.Unlock()
