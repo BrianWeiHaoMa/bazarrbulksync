@@ -1,0 +1,62 @@
+# The offline checks, on every push to main and every pull request: the
+# tests run against the fake Bazarr, natively on each system the release
+# ships for. The test-bed checks (`go run ./testbed up`, then the TestBed*
+# tests) need real Bazarrs, the macOS and Windows test machines, and minutes
+# of real time, so they run on the maintainer's machine before a release.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CGO_ENABLED: "0"
+
+jobs:
+  linux:
+    name: Lint, test, and vet every release platform
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          # No go.sum to key a cache on: the module has no dependencies.
+          cache: false
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "Not gofmt-formatted:"; echo "$unformatted"; exit 1; fi
+      - run: go vet ./...
+      - name: staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
+      - run: go test ./...
+      - name: Vet the other release platforms
+        run: |
+          for p in linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            echo "$p"
+            GOOS=${p%/*} GOARCH=${p#*/} go vet ./...
+          done
+
+  test:
+    name: Test on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go test ./...
