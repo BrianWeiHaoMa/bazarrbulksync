@@ -52,3 +52,42 @@ func TestExecutableStops(t *testing.T) {
 		}
 	}
 }
+
+// TestExecutableStopsDelete sends SIGINT and SIGTERM while the fake holds the
+// second DELETE: the first is reported deleted, the held one unconfirmed,
+// then the totals; nothing more is sent (G4).
+func TestExecutableStopsDelete(t *testing.T) {
+	for _, sig := range []syscall.Signal{syscall.SIGINT, syscall.SIGTERM} {
+		t.Run(sig.String(), func(t *testing.T) {
+			srv := fakebazarr.New(t, fakebazarr.Config{Library: deleteLibrary})
+			srv.Respond(func(r fakebazarr.Request) fakebazarr.Behavior {
+				if r.Method == "DELETE" && r.Params().Get("path") == "/movies/Tears/Tears.es.hi.srt" {
+					return fakebazarr.Hold
+				}
+				return fakebazarr.Serve
+			})
+			cmd, stdout, stderr := command(srv.URL, srv.APIKey(), "delete", "--language", "es", "--yes")
+			if err := cmd.Start(); err != nil {
+				t.Fatal(err)
+			}
+			srv.WaitHeld()
+			sent := len(srv.Requests())
+			if err := cmd.Process.Signal(sig); err != nil {
+				t.Fatal(err)
+			}
+			waitExit(t, cmd)
+			if status := cmd.ProcessState.Sys().(syscall.WaitStatus); status.Signaled() {
+				t.Fatalf("ended by the signal's default action (%v), not with an exit code of its own (S8)", status.Signal())
+			}
+			if n := len(srv.Requests()); n != sent {
+				t.Errorf("%d requests after the stop, want none (G4)", n-sent)
+			}
+			out := stdout.String()
+			if cmd.ProcessState.ExitCode() == 0 || !strings.Contains(out, "deleted  Sintel") ||
+				!strings.Contains(out, "unconfirmed  Tears of Steel") || !strings.Contains(out, "Total: 2 of 3") {
+				t.Errorf("code %d, stdout %q, stderr %q; want the deleted and unconfirmed lines and their totals, nonzero",
+					cmd.ProcessState.ExitCode(), out, stderr)
+			}
+		})
+	}
+}

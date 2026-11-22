@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -24,15 +25,98 @@ type outcome struct {
 }
 
 // run runs the composed command with args, the environment env, and the
-// test's clock, as main runs it, and returns its exit code and streams.
+// test's clock, as main runs it, with standard input not a terminal, and
+// returns its exit code and streams.
 func run(ctx context.Context, clock *fakeclock.Clock, env map[string]string, args ...string) outcome {
-	var stdout, stderr bytes.Buffer
-	code := commands.Run(ctx, args, commands.Env{
-		Getenv:   func(name string) string { return env[name] },
-		Reporter: reporter.New(&stdout, &stderr),
-		Clock:    clock,
-	})
-	return outcome{code: code, stdout: stdout.String(), stderr: stderr.String()}
+	return <-startWith(ctx, clock, env, notTerminal, args...).done
+}
+
+// stdin is the standard input a run gets: its reader, and whether the
+// terminal query says it is a terminal.
+type stdin struct {
+	reader   io.Reader
+	terminal bool
+}
+
+// notTerminal is standard input as a scheduler gives it: /dev/null.
+var notTerminal = stdin{reader: strings.NewReader("")}
+
+// typed is a terminal on which the user has typed text.
+func typed(text string) stdin { return stdin{reader: strings.NewReader(text), terminal: true} }
+
+// syncBuffer is a buffer the test may read while the run writes to it.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
+// keyboard is a terminal the test types on once the run reads from it.
+type keyboard struct {
+	asked   chan struct{}
+	once    sync.Once
+	lines   chan string
+	pending string
+}
+
+func newKeyboard() *keyboard {
+	return &keyboard{asked: make(chan struct{}), lines: make(chan string, 1)}
+}
+
+func (k *keyboard) Read(p []byte) (int, error) {
+	k.once.Do(func() { close(k.asked) })
+	if k.pending == "" {
+		line, ok := <-k.lines
+		if !ok {
+			return 0, io.EOF
+		}
+		k.pending = line
+	}
+	n := copy(p, k.pending)
+	k.pending = k.pending[n:]
+	return n, nil
+}
+
+// waitAsked blocks until the run reads its answer.
+func (k *keyboard) waitAsked(t *testing.T) {
+	t.Helper()
+	select {
+	case <-k.asked:
+	case <-time.After(10 * time.Second): // a guard against a hang only
+		t.Fatal("the run never read standard input")
+	}
+}
+
+// running is a run in the background: its streams so far, and its outcome
+// once it ends.
+type running struct {
+	stdout, stderr *syncBuffer
+	done           <-chan outcome
+}
+
+// startWith starts the composed command in the background with in as
+// standard input; standard output and error are not terminals.
+func startWith(ctx context.Context, clock *fakeclock.Clock, env map[string]string, in stdin, args ...string) running {
+	r := running{stdout: &syncBuffer{}, stderr: &syncBuffer{}}
+	done := make(chan outcome, 1)
+	r.done = done
+	rep := reporter.FromStreams(reporter.Streams{In: in.reader, Out: r.stdout, Err: r.stderr, InTerminal: in.terminal})
+	go func() {
+		code := commands.Run(ctx, args, commands.Env{Getenv: func(name string) string { return env[name] }, Reporter: rep, Clock: clock})
+		done <- outcome{code: code, stdout: r.stdout.String(), stderr: r.stderr.String()}
+	}()
+	return r
 }
 
 // runAgainst runs the composed command pointed at srv through the
@@ -49,9 +133,7 @@ func envFor(srv *fakebazarr.Server) map[string]string {
 // startRun runs the composed command in the background; the returned
 // channel delivers its outcome.
 func startRun(ctx context.Context, clock *fakeclock.Clock, env map[string]string, args ...string) <-chan outcome {
-	done := make(chan outcome, 1)
-	go func() { done <- run(ctx, clock, env, args...) }()
-	return done
+	return startWith(ctx, clock, env, notTerminal, args...).done
 }
 
 // await returns the run's outcome; the deadline only turns a hang into a failure.
@@ -290,5 +372,30 @@ func TestStop(t *testing.T) {
 				t.Errorf("%d requests, want the check and the one read stopped (G4)", n)
 			}
 		})
+	}
+}
+
+// TestShortKey: a key short enough to occur in the address or the
+// program's words leaves both readable (G2), while a key quoted back from
+// the command line is still hidden (R2).
+func TestShortKey(t *testing.T) {
+	for _, key := range []string{"6767", "e"} {
+		srv := fakebazarr.New(t, fakebazarr.Config{APIKey: "another-key", BasePath: "/6767"})
+		o := run(context.Background(), fakeclock.New(t), map[string]string{"BAZARR_URL": srv.URL, "BAZARR_API_KEY": key}, "list")
+		failed(t, "short key "+key, o)
+		if !strings.Contains(o.stderr, "Bazarr at "+srv.URL+" rejected the API key") {
+			t.Errorf("key %q: standard error %q, want the full address and a readable cause", key, o.stderr)
+		}
+	}
+	srv := fakebazarr.New(t, fakebazarr.Config{APIKey: "yes", Library: library})
+	o := runAgainst(t, srv, "delete", "--language", "en")
+	failed(t, "short accepted key", o)
+	if !strings.Contains(o.stderr, "--yes") {
+		t.Errorf("standard error %q, want --yes required, readable (G12)", o.stderr)
+	}
+	o = runAgainst(t, srv, "delete", "--title", "yes")
+	failed(t, "key as title", o)
+	if strings.Contains(o.stderr, `"yes"`) {
+		t.Errorf("standard error %q quotes the API key back (R2)", o.stderr)
 	}
 }

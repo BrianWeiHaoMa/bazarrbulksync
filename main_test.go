@@ -3,6 +3,7 @@ package main_test
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -156,5 +157,51 @@ func TestHTTP2DebugKeepsKey(t *testing.T) {
 	}
 	if strings.Contains(stderr.String(), srv.APIKey()) {
 		t.Errorf("standard error holds the API key (R2):\n%s", stderr)
+	}
+}
+
+// deleteLibrary holds three Spanish subtitles and one English one.
+var deleteLibrary = fakebazarr.Library{Movies: []fakebazarr.Movie{
+	{RadarrID: 1, Title: "Sintel", Subtitles: []fakebazarr.Subtitle{
+		{Path: "/movies/Sintel/Sintel.en.srt", Language: "en"}, {Path: "/movies/Sintel/Sintel.es.srt", Language: "es"},
+	}},
+	{RadarrID: 2, Title: "Tears of Steel", Subtitles: []fakebazarr.Subtitle{
+		{Path: "/movies/Tears/Tears.es.srt", Language: "es"}, {Path: "/movies/Tears/Tears.es.hi.srt", Language: "es", HI: true},
+	}},
+}}
+
+// deletesReceived counts the DELETE requests srv received.
+func deletesReceived(srv *fakebazarr.Server) int {
+	n := 0
+	for _, r := range srv.Requests() {
+		if r.Method == "DELETE" {
+			n++
+		}
+	}
+	return n
+}
+
+// TestExecutableConfirmation: with standard input not a terminal, as a
+// scheduler or `docker run` without -i gives it, nobody can confirm (G12).
+func TestExecutableConfirmation(t *testing.T) {
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer devNull.Close()
+	for name, in := range map[string]io.Reader{"the null device": devNull, "a pipe": strings.NewReader("y\n")} {
+		srv := fakebazarr.New(t, fakebazarr.Config{Library: deleteLibrary})
+		cmd, stdout, stderr := command(srv.URL, srv.APIKey(), "delete", "--language", "es")
+		cmd.Stdin = in
+		if err := cmd.Start(); err != nil {
+			t.Fatal(err)
+		}
+		waitExit(t, cmd)
+		if code := cmd.ProcessState.ExitCode(); code == 0 || !strings.Contains(stderr.String(), "--yes") || stdout.Len() != 0 {
+			t.Errorf("%s: code %d, stdout %q, stderr %q; want --yes required and a nonzero exit", name, code, stdout, stderr)
+		}
+		if n := deletesReceived(srv); n != 0 {
+			t.Errorf("%s: %d DELETE requests, want none", name, n)
+		}
 	}
 }

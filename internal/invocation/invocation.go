@@ -6,6 +6,7 @@ package invocation
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
@@ -17,7 +18,7 @@ type Command string
 
 // commands is every command the program accepts, in the order its help
 // lists them. A new command is one file beside list.go and one entry here.
-var commands = []command{listCommand}
+var commands = []command{listCommand, deleteCommand}
 
 // Request is a validated command line. The connection and the selection are
 // shared by every command; each command's own options sit in its field.
@@ -29,6 +30,15 @@ type Request struct {
 	Connection bazarr.Connection
 	Selection  selection.Criteria
 	List       ListOptions
+	Change     ChangeOptions
+}
+
+// ChangeOptions are the options of the commands that change Bazarr (F7).
+type ChangeOptions struct {
+	// Yes proceeds without asking for confirmation (G12).
+	Yes bool
+	// DryRun prints what would be done and sends no changing request (G13).
+	DryRun bool
 }
 
 // Result is what a command line asks for: a request, or, when Request is
@@ -178,6 +188,9 @@ func (p parser) parseCommand(cmd command, args []string, getenv func(string) str
 	}
 	if help {
 		return Result{Text: commandHelp(cmd)}, nil
+	}
+	if cmd.needsSelection && !slices.ContainsFunc(selectionOptions, func(o option) bool { return given[o.name] }) {
+		return Result{}, p.usage(cmd.name, "%s needs at least one selection option, such as --language or --title", cmd.name)
 	}
 	if !given[optURL] {
 		req.Connection.URL = getenv(envURL)

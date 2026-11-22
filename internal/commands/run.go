@@ -77,14 +77,13 @@ func run(ctx context.Context, args []string, env Env) int {
 	req := res.Request
 	conn := req.Connection
 	conn.Clock, conn.Limits = env.Clock, env.Limits
-	client, err := bazarr.Connect(ctx, conn)
-	if err == nil {
-		switch req.Command {
-		case invocation.CommandList:
-			err = list(ctx, client, req, rep)
-		default:
-			err = fmt.Errorf("the command %s is not built", req.Command)
-		}
+	switch req.Command {
+	case invocation.CommandList:
+		err = list(ctx, conn, req, rep)
+	case invocation.CommandDelete:
+		err = runChanges(ctx, conn, req, rep, deleteCommand)
+	default:
+		err = fmt.Errorf("the command %s is not built", req.Command)
 	}
 	return finish(err, rep)
 }
@@ -97,6 +96,8 @@ func finish(err error, rep *reporter.Reporter) int {
 	case errors.Is(err, errEmptySelection):
 		rep.Note(err.Error())
 		return exitOK
+	case errors.Is(err, errSomeNotDone):
+		return exitFail
 	case errors.Is(err, bazarr.ErrStopped):
 		rep.Error("stopped")
 	default:

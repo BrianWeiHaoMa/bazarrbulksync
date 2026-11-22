@@ -27,6 +27,9 @@ type command struct {
 	// section titles the command's own options in its help.
 	section string
 	options []option
+	// needsSelection makes a command line without a selection option a
+	// usage error (G26).
+	needsSelection bool
 }
 
 // option is one option of a command. An option without arg is a flag.
@@ -78,6 +81,18 @@ var selectionOptions = []option{
 	}},
 	{name: "no-forced", help: "no forced subtitles", set: func(r *Request, _ string) error {
 		r.Selection.Forced = selection.Without
+		return nil
+	}},
+}
+
+// changeOptions are F7's, accepted by every command that changes Bazarr.
+var changeOptions = []option{
+	{name: "yes", help: "do not ask for confirmation", set: func(r *Request, _ string) error {
+		r.Change.Yes = true
+		return nil
+	}},
+	{name: "dry-run", help: "print what would be done, and change nothing", set: func(r *Request, _ string) error {
+		r.Change.DryRun = true
 		return nil
 	}},
 }

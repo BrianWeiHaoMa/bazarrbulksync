@@ -38,7 +38,11 @@ func commandHelp(cmd command) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Usage: bazarrbulksync %s [options]\n\n%s\n", cmd.name, cmd.about)
 	writeOptions(&b, cmd.section+":", cmd.options)
-	writeOptions(&b, "Selection (with none, every external subtitle is selected):", selectionOptions)
+	selectionTitle := "Selection (with none, every external subtitle is selected):"
+	if cmd.needsSelection {
+		selectionTitle = "Selection (at least one is required):"
+	}
+	writeOptions(&b, selectionTitle, selectionOptions)
 	b.WriteString("  A subtitle is selected when it satisfies every kind of option given;\n" +
 		"  --title, --movie-id, and --series-id are one kind, which any one value satisfies.\n")
 	writeOptions(&b, "Connection:", connectionOptions)

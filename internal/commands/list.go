@@ -11,7 +11,11 @@ import (
 
 // list prints the selected subtitles, one line each, then the totals; with
 // --json, one object each and no totals (G10, G11). It changes nothing.
-func list(ctx context.Context, client *bazarr.Client, req *invocation.Request, rep *reporter.Reporter) error {
+func list(ctx context.Context, conn bazarr.Connection, req *invocation.Request, rep *reporter.Reporter) error {
+	client, err := bazarr.Connect(ctx, conn)
+	if err != nil {
+		return err
+	}
 	lib, _, err := client.Library(ctx)
 	if err != nil {
 		return err
