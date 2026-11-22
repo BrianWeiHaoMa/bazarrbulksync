@@ -98,6 +98,20 @@ func (q *queueWatch) sawActive(from int, path string) bool {
 	return false
 }
 
+// shows reports whether a read begun after the call, within two seconds,
+// shows a sync job of path pending or running: a job Bazarr moves from its
+// pending to its running queue is briefly shown in neither (S2).
+func (q *queueWatch) shows(path string) bool {
+	from := q.count() + 1 // a read under way now began before the call
+	for deadline := time.Now().Add(2 * time.Second); time.Now().Before(deadline); {
+		q.mark()
+		if q.sawActive(from, path) {
+			return true
+		}
+	}
+	return false
+}
+
 // mostAtOnce returns, for each run, the most sync jobs of that run that one
 // read since from showed pending or running. Bazarr numbers its jobs in the
 // order it queues them, and a run has one request in flight at a time (the

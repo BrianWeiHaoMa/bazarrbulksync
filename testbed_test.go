@@ -287,7 +287,7 @@ func pathsInAnswer(t *testing.T, m bed.Manifest) []string {
 // changingSets are the switches, each beside bed.EnvVar, of the sets of
 // checks that change the bed. Each set needs a fresh bed, so no two run in
 // one invocation; a new set adds its switch here.
-var changingSets = []string{changesVar, syncVar, pathsVar}
+var changingSets = []string{changesVar, syncVar, pathsVar, outagesVar}
 
 // changingBed loads the bed for the changing set whose switch is mine. It
 // skips without the bed or without that switch, and fails while another

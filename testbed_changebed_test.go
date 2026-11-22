@@ -33,6 +33,7 @@ type changeBed struct {
 	mu       sync.Mutex
 	requests []*sentRequest // each request of the last run, answered or not
 	keyInURL bool           // a request of the last run carried the key in its URL
+	cut      chan struct{}  // open while the network is cut (startCut)
 }
 
 // sentRequest is one request of a run as the proxy saw it.
@@ -40,6 +41,8 @@ type sentRequest struct {
 	method, path string
 	query        url.Values
 	status       int // Bazarr's answer, 0 while unanswered
+	sent         time.Time
+	answered     time.Time // when the proxy let Bazarr's answer through
 }
 
 // statusWriter keeps the status of the answer it passes on.
@@ -60,13 +63,15 @@ func newChangeBed(t *testing.T, m bed.Manifest) *changeBed {
 	}
 	b := &changeBed{Manifest: m}
 	forward := httputil.NewSingleHostReverseProxy(target)
+	forward.ModifyResponse, forward.ErrorHandler = b.answerUnlessCut, b.answerError
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b.mu.Lock()
 		query, _ := url.QueryUnescape(r.URL.RawQuery)
 		b.keyInURL = b.keyInURL || strings.Contains(r.URL.String(), m.APIKey) || strings.Contains(query, m.APIKey)
-		req := &sentRequest{method: r.Method, path: r.URL.Path, query: r.URL.Query()}
+		req := &sentRequest{method: r.Method, path: r.URL.Path, query: r.URL.Query(), sent: time.Now()}
 		b.requests = append(b.requests, req)
 		b.mu.Unlock()
+		r = b.holdIfCut(r, req)
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		forward.ServeHTTP(sw, r)
 		b.mu.Lock()

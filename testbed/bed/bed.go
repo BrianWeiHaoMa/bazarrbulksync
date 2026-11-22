@@ -138,6 +138,22 @@ func (m Manifest) ReadFile(path string) ([]byte, error) {
 	return data, nil
 }
 
+// Restart restarts the first Bazarr as a crash and a restart would: its
+// container's processes are killed at once, so that a job Bazarr is running
+// or holds queued never finishes, and the container is started again with
+// the same configuration, history, key, and address. It returns once Docker
+// has started the container; Bazarr answers some seconds later. A stop
+// that waited for Bazarr could let a running sync finish first.
+func (m Manifest) Restart() error {
+	for _, args := range [][]string{{"kill", "--signal", "KILL", m.Container}, {"start", m.Container}} {
+		cmd := exec.Command("docker", args...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("docker %s %s: %v: %s", args[0], m.Container, err, bytes.TrimSpace(out))
+		}
+	}
+	return nil
+}
+
 // Compare returns the placed subtitles the library lacks and the library's
 // subtitles the bed did not place, each sorted by path. A subtitle counts
 // as shown only with every attribute the bed intended.
