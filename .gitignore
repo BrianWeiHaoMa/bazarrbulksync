@@ -1,0 +1,3 @@
+# What `go build` writes at the repository root. Never committed.
+/bazarrbulksync
+/bazarrbulksync.exe
