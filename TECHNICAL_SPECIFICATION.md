@@ -105,7 +105,7 @@ A slot is taken before the request is sent and released only when the subtitle's
 
 ### G22, G23. The state file
 
-Kept by the write and load rules of `State`, by construction: only the failure store opens files (R1), and it replaces the state file only by rename (S5). Limit: nothing is flushed to the device; E4 excludes power loss and device failure. On Windows the entry waits on T3.
+Kept by the write and load rules of `State`, by construction: only the failure store opens files (R1), and it replaces the state file only by rename (S5). Limit: nothing is flushed to the device; E4 excludes power loss and device failure. On Windows the entry rests on T3.
 
 ### G24, G27. One request, never a second
 
@@ -142,4 +142,4 @@ The arrangements rely on these assumptions, and none narrows a guarantee inside 
 
 - **T1.** The implementer sets the request time limits by measuring reads and changes against a real Bazarr library. Each request has one, and none exceeds G3's 5 minutes. Until measured, every limit is 60 seconds.
 - **T2.** The project owner decides how releases are built and published (F2) when the first release is cut; publishing needs credentials no build session holds. Until then the build produces the six executables and the image locally, as `Foundations` says.
-- **T3.** Whether a kill during a rename of the temporary file onto the state file on Windows, replacing it or not, always leaves a complete state in the state file, or no state file and a complete state in the temporary file, is unverified. Whoever builds the failure store settles it on a Windows machine, on NTFS and on exFAT, by killing the tool during each rename, repeatedly, and loading afterwards. G22 on Windows waits on it; if a kill can leave neither, the conflict goes back to this document.
+- **T3.** Settled on a Windows machine (Windows build 26300, x86-64), on NTFS and on exFAT, by killing the tool during each rename, repeatedly, and loading afterwards: a kill during a rename of the temporary file onto the state file, replacing it or not, always left a complete state in the state file, or no state file and a complete state in the temporary file. A kill during a replacing rename did leave no state file, on both filesystems, so Loading's rule for a missing state file is what keeps G22 there.

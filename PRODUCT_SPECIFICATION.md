@@ -142,7 +142,7 @@ Behavior outside these assumptions is not promised.
 ### `fix`
 
 - **G24.** `fix` asks Bazarr to apply the named fix to each selected subtitle that G25 does not skip, one request at a time. The outcome is `applied` when Bazarr accepts the request, `failed` when it refuses, and `unconfirmed`, without a second request, when it never answers. `fix` keeps no record: run again, it asks again for every such subtitle.
-- **G25.** `fix remove-hi` skips a hearing-impaired subtitle whose video has another external subtitle of the same language and forced flag that is not hearing-impaired, because Bazarr can replace that other subtitle with the result.
+- **G25.** `fix remove-hi` skips a subtitle whose video has another external subtitle of the same language that is neither hearing-impaired nor forced, or that follows, in the run's order, a selected subtitle of the same video and language that it does not skip, because Bazarr writes the result in that subtitle's place.
 
 ### `delete`
 
