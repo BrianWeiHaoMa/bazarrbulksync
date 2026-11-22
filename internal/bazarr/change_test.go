@@ -263,7 +263,7 @@ func TestChangeRefused(t *testing.T) {
 
 func TestChangeLimit(t *testing.T) {
 	if bazarr.DefaultLimits.Change != 60*time.Second {
-		t.Errorf("DefaultLimits.Change = %v, want 60s until measured (T1)", bazarr.DefaultLimits.Change)
+		t.Errorf("DefaultLimits.Change = %v, want 60s as measured (T1)", bazarr.DefaultLimits.Change)
 	}
 	for _, tc := range []struct {
 		limits bazarr.Limits

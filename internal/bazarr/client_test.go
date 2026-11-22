@@ -98,7 +98,7 @@ func TestReadLimitTold(t *testing.T) {
 
 func TestDefaultLimits(t *testing.T) {
 	if bazarr.DefaultLimits.Read != 60*time.Second {
-		t.Errorf("DefaultLimits.Read = %v, want 60s until measured (T1)", bazarr.DefaultLimits.Read)
+		t.Errorf("DefaultLimits.Read = %v, want 60s as measured (T1)", bazarr.DefaultLimits.Read)
 	}
 	srv := fakebazarr.New(t, fakebazarr.Config{})
 	srv.Respond(func(fakebazarr.Request) fakebazarr.Behavior { return fakebazarr.Hold })

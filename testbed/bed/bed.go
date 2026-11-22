@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"slices"
 	"sort"
+	"time"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
 )
@@ -185,25 +186,14 @@ type ShownVideo struct {
 
 // Shown reads Bazarr's movies and the episodes of the bed's series directly,
 // not through the client, so that checks can hold the client and the
-// program against Bazarr's own answer. It follows no redirect, which would
-// carry the key elsewhere.
+// program against Bazarr's own answer.
 func (m Manifest) Shown() ([]ShownVideo, error) {
 	calls := []string{"movies"}
 	for _, s := range m.Series {
 		calls = append(calls, fmt.Sprintf("episodes?seriesid[]=%d", s.ID))
 	}
-	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	var videos []ShownVideo
 	for _, call := range calls {
-		req, err := http.NewRequest("GET", m.URL+"/api/"+call, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("X-API-KEY", m.APIKey)
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
 		var answer struct {
 			Data []struct {
 				Path      string `json:"path"`
@@ -212,10 +202,8 @@ func (m Manifest) Shown() ([]ShownVideo, error) {
 				} `json:"subtitles"`
 			} `json:"data"`
 		}
-		err = json.NewDecoder(resp.Body).Decode(&answer)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("GET %s: %w", call, err)
+		if err := m.Get(call, &answer); err != nil {
+			return nil, err
 		}
 		for _, v := range answer.Data {
 			video := ShownVideo{Path: v.Path}
@@ -226,4 +214,34 @@ func (m Manifest) Shown() ([]ShownVideo, error) {
 		}
 	}
 	return videos, nil
+}
+
+// noRedirect follows no redirect, which would carry the key elsewhere, and
+// gives up on an answer that takes longer than any the bed was seen to give.
+var noRedirect = &http.Client{
+	Timeout:       30 * time.Second,
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
+
+// Get reads call, under <address>/api, from Bazarr directly, not through
+// the client, and decodes its JSON answer into answer. Any status but 200
+// is an error.
+func (m Manifest) Get(call string, answer any) error {
+	req, err := http.NewRequest("GET", m.URL+"/api/"+call, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-API-KEY", m.APIKey)
+	resp, err := noRedirect.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s: HTTP %d", call, resp.StatusCode)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(answer); err != nil {
+		return fmt.Errorf("GET %s: %w", call, err)
+	}
+	return nil
 }

@@ -34,8 +34,15 @@ type Limits struct {
 	Change time.Duration
 }
 
-// DefaultLimits holds every limit at 60 seconds until they are measured
-// against a real Bazarr (T1).
+// DefaultLimits are the limits measured against the test bed's Bazarr 1.6.2
+// (T1): idle and while it ran one and four syncs, every read was answered
+// within 130 ms and every change within 163 ms (a delete; a fix 152 ms, a
+// sync submission 6 ms), the slowest of each while syncs ran. The bed holds
+// three movies and three episodes, and the library read grows with the
+// library (about 0.4 ms a movie there), so the margin, about 400 times, is
+// for libraries thousands of times larger on slower machines. A shorter read
+// limit would have a large library's read retried until Bazarr counts as
+// unreachable, and a shorter change limit a slow fix reported unconfirmed.
 var DefaultLimits = Limits{Read: 60 * time.Second, Change: 60 * time.Second}
 
 // Connection is what the client needs to reach Bazarr.

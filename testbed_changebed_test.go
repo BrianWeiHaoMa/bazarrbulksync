@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
@@ -11,11 +12,13 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
 	"github.com/BrianWeiHaoMa/bazarrbulksync/testbed/bed"
@@ -28,8 +31,26 @@ type changeBed struct {
 	bed.Manifest
 	proxy    string
 	mu       sync.Mutex
-	sent     []string // "METHOD path" of each request of the last run
-	keyInURL bool     // a request of the last run carried the key in its URL
+	requests []*sentRequest // each request of the last run, answered or not
+	keyInURL bool           // a request of the last run carried the key in its URL
+}
+
+// sentRequest is one request of a run as the proxy saw it.
+type sentRequest struct {
+	method, path string
+	query        url.Values
+	status       int // Bazarr's answer, 0 while unanswered
+}
+
+// statusWriter keeps the status of the answer it passes on.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
 }
 
 func newChangeBed(t *testing.T, m bed.Manifest) *changeBed {
@@ -41,10 +62,16 @@ func newChangeBed(t *testing.T, m bed.Manifest) *changeBed {
 	forward := httputil.NewSingleHostReverseProxy(target)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b.mu.Lock()
-		b.sent = append(b.sent, r.Method+" "+r.URL.Path)
-		b.keyInURL = b.keyInURL || strings.Contains(r.URL.String(), m.APIKey)
+		query, _ := url.QueryUnescape(r.URL.RawQuery)
+		b.keyInURL = b.keyInURL || strings.Contains(r.URL.String(), m.APIKey) || strings.Contains(query, m.APIKey)
+		req := &sentRequest{method: r.Method, path: r.URL.Path, query: r.URL.Query()}
+		b.requests = append(b.requests, req)
 		b.mu.Unlock()
-		forward.ServeHTTP(w, r)
+		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		forward.ServeHTTP(sw, r)
+		b.mu.Lock()
+		req.status = sw.status
+		b.mu.Unlock()
 	}))
 	t.Cleanup(srv.Close)
 	b.proxy = srv.URL
@@ -56,16 +83,21 @@ func newChangeBed(t *testing.T, m bed.Manifest) *changeBed {
 // run that breaks that stops the check before its output reaches the log.
 func (b *changeBed) exec(t *testing.T, args ...string) (result, []string) {
 	t.Helper()
-	b.mu.Lock()
-	b.sent, b.keyInURL = nil, false
-	b.mu.Unlock()
+	b.forget()
 	r := runExecutable(t, b.proxy, b.APIKey, args...)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.keyInURL || strings.Contains(r.stdout+r.stderr, b.APIKey) {
 		t.Fatalf("%q put the API key in a URL or printed it", args)
 	}
-	return r, slices.Clone(b.sent)
+	return r, b.sent()
+}
+
+// forget clears what the proxy recorded, before a run.
+func (b *changeBed) forget() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.requests, b.keyInURL = nil, false
 }
 
 // run runs the executable and requires the exit code want.
@@ -83,9 +115,18 @@ func (b *changeBed) sends(t *testing.T, n int) {
 	t.Helper()
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if got := changes(b.sent); len(got) != n {
+	if got := changes(b.sent()); len(got) != n {
 		t.Errorf("the run sent %v, want %d changing requests", got, n)
 	}
+}
+
+// sent returns "METHOD path" of each request of the last run; b.mu is held.
+func (b *changeBed) sent() []string {
+	var out []string
+	for _, r := range b.requests {
+		out = append(out, r.method+" "+r.path)
+	}
+	return out
 }
 
 // changes returns the requests of sent that are not reads.
@@ -330,4 +371,86 @@ func textLines(data []byte) []string {
 		out = append(out, l)
 	}
 	return out
+}
+
+// live runs `sync` with args through the proxy, handing each line of its
+// standard output to asReported and then to onLine as it comes, with a
+// function that interrupts the run as Ctrl-C does. A real sync takes
+// seconds, and a run waits five seconds between some of its reads, so the
+// deadline is minutes.
+func (b *changeBed) live(t *testing.T, args []string, onLine func(line string, stop func())) result {
+	t.Helper()
+	b.forget()
+	cmd, _, stderr := command(b.proxy, b.APIKey, args...)
+	cmd.Stdout = nil
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	timer := time.AfterFunc(5*time.Minute, func() { _ = cmd.Process.Kill() })
+	defer timer.Stop()
+	stop := func() {
+		if err := cmd.Process.Signal(os.Interrupt); err != nil {
+			t.Errorf("interrupting the run: %v", err)
+		}
+	}
+	var stdout strings.Builder
+	lines := bufio.NewScanner(out)
+	for lines.Scan() {
+		stdout.WriteString(lines.Text() + "\n")
+		b.asReported(t, lines.Text())
+		if onLine != nil {
+			onLine(lines.Text(), stop)
+		}
+	}
+	_ = cmd.Wait()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	r := result{code: cmd.ProcessState.ExitCode(), stdout: stdout.String(), stderr: stderr.String()}
+	if b.keyInURL || strings.Contains(r.stdout+r.stderr, b.APIKey) {
+		t.Fatalf("%q put the API key in a URL or printed it", args)
+	}
+	return r
+}
+
+// syncsOfLastRun returns the sync requests of the last run, in the order
+// it sent them.
+func (b *changeBed) syncsOfLastRun() []*sentRequest {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	var out []*sentRequest
+	for _, r := range b.requests {
+		if r.method == "PATCH" && r.query.Get("action") == "sync" {
+			c := *r
+			out = append(out, &c)
+		}
+	}
+	return out
+}
+
+// awaitSyncs waits until the running run has had n sync requests answered.
+func (b *changeBed) awaitSyncs(t *testing.T, n int) {
+	for deadline := time.Now().Add(time.Minute); time.Now().Before(deadline); time.Sleep(10 * time.Millisecond) {
+		answered := 0
+		for _, r := range b.syncsOfLastRun() {
+			if r.status != 0 {
+				answered++
+			}
+		}
+		if answered >= n {
+			return
+		}
+	}
+	t.Errorf("the run had not sent %d syncs within a minute", n)
+}
+
+func describe(reqs []*sentRequest) string {
+	var out []string
+	for _, r := range reqs {
+		out = append(out, fmt.Sprintf("%s %s %v -> %d", r.method, r.path, r.query, r.status))
+	}
+	return "[" + strings.Join(out, "; ") + "]"
 }
