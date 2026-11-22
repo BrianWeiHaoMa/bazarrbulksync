@@ -36,8 +36,9 @@ type syncRun struct {
 	// followed are the submitted syncs, each holding a slot until its
 	// outcome is reported (G17).
 	followed []*followedSync
-	// queues are every queue read of the run, in order: the judging's, and
-	// those made while waiting and following.
+	// queues are the run's queue reads that a five-second rule can still
+	// consult, in order: the judging's, and those made while waiting and
+	// following (keep).
 	queues  []bazarr.Queue
 	notDone bool
 }
@@ -109,8 +110,40 @@ func (r *syncRun) loop(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		r.queues = append(r.queues, q)
+		r.keep(q)
 	}
+}
+
+// keep adds the queue reads qs to the run's, and drops those no
+// five-second rule will consult again.
+func (r *syncRun) keep(qs ...bazarr.Queue) {
+	r.queues = append(r.queues, qs...)
+	n := unconsulted(r.queues)
+	if n == 0 {
+		return
+	}
+	r.queues = slices.Delete(r.queues, 0, n)
+	for _, f := range r.followed {
+		f.from = max(f.from-n, 0)
+	}
+}
+
+// unconsulted is how many of the queue reads qs, oldest first, no
+// five-second rule will consult again: those before the latest read
+// answered queueGap before the newest was sent. Every rule asks about a
+// time no earlier than that and looks back no further than such a read.
+func unconsulted(qs []bazarr.Queue) int {
+	if len(qs) == 0 {
+		return 0
+	}
+	newest := qs[len(qs)-1].Sent
+	return max(slices.IndexFunc(qs, func(q bazarr.Queue) bool { return !gapBefore(q, newest) })-1, 0)
+}
+
+// gapBefore reports whether the queue read q was answered at least
+// queueGap before at.
+func gapBefore(q bazarr.Queue, at time.Time) bool {
+	return !q.Answered.After(at.Add(-queueGap))
 }
 
 // candidate takes the next subtitle to judge, as an index of subs: the
@@ -156,7 +189,7 @@ func (r *syncRun) clearOf(path string, from int, at time.Time) (clear, seen bool
 		if q.HasSyncOf(path) {
 			return false, true
 		}
-		if !q.Answered.After(at.Add(-queueGap)) {
+		if gapBefore(q, at) {
 			return true, false
 		}
 	}
@@ -174,7 +207,7 @@ func (r *syncRun) handle(ctx context.Context, i int) (moved bool, err error) {
 		return true, nil
 	}
 	j, err := judge(ctx, r.c, r.clock, sel, r.opts, r.store)
-	r.queues = append(r.queues, j.Queues...)
+	r.keep(j.Queues...)
 	if err != nil {
 		return false, err
 	}

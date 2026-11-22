@@ -31,8 +31,9 @@ type judgment struct {
 	// Baseline is Bazarr's start time and the identities of the subtitle's
 	// events of kinds 1 to 6, newest first, as read for this verdict.
 	Baseline baseline
-	// Queues are every queue read the judging made, in order, those of a
-	// pass it started again included.
+	// Queues are the queue reads the judging made that a five-second rule
+	// can still consult, in order, those of a pass it started again
+	// included.
 	Queues []bazarr.Queue
 	// Lapsed is set when the path had a recorded failure that the events
 	// show lapsed (G21).
@@ -66,6 +67,7 @@ func judge(ctx context.Context, c *bazarr.Client, clock bazarr.Clock, sel select
 			return j, err
 		}
 		j.Queues = append(j.Queues, queue)
+		j.Queues = slices.Delete(j.Queues, 0, unconsulted(j.Queues))
 		events, r, err := c.Events(ctx, sel.Subtitle, sel.Others)
 		retried = retried || r
 		if err != nil {

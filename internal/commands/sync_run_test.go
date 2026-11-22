@@ -4,10 +4,12 @@ import (
 	"context"
 	"net/http"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/fakebazarr"
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/fakeclock"
@@ -217,5 +219,101 @@ func TestSyncSlots(t *testing.T) {
 		if n := srv.MostAtOnce(); n != 1 {
 			t.Errorf("--concurrency %d: the fake answered %d requests at once", concurrency, n)
 		}
+	}
+}
+
+// heavyQueueRead makes each read of srv's queue weigh about the bytes it
+// returns: Bazarr's queue lists ended jobs too, here with long names.
+func heavyQueueRead(srv *fakebazarr.Server) int {
+	const jobs, nameLen = 200, 1000
+	for i := range jobs {
+		srv.AddJob(strconv.Itoa(i)+strings.Repeat("x", nameLen), fakebazarr.JobCompleted)
+	}
+	return jobs * nameLen
+}
+
+// queueReads counts the reads of its queue the fake received.
+func queueReads(srv *fakebazarr.Server) int {
+	n := 0
+	for _, r := range srv.Requests() {
+		if strings.HasSuffix(r.Path, "system/jobs") {
+			n++
+		}
+	}
+	return n
+}
+
+// liveHeap is the heap still in use after a collection.
+func liveHeap() int {
+	runtime.GC()
+	runtime.GC()
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return int(m.HeapAlloc)
+}
+
+// heapAcrossQueueReads lets the run's sleeps pass until it has read the
+// queue a hundred more times, and fails the test when the heap grew by
+// more than ten of those reads, which State does not hold.
+func (s *syncing) heapAcrossQueueReads(readSize int) {
+	s.t.Helper()
+	s.idle()
+	before, from := liveHeap(), queueReads(s.srv)
+	for range 10000 {
+		if queueReads(s.srv)-from >= 100 {
+			break
+		}
+		s.step()
+		s.idle()
+	}
+	grew, reads := liveHeap()-before, queueReads(s.srv)-from
+	if reads < 100 {
+		s.t.Fatalf("only %d queue reads", reads)
+	}
+	if grew > 10*readSize {
+		s.t.Errorf("the heap grew by %d bytes over %d queue reads of about %d bytes each", grew, reads, readSize)
+	}
+	s.stop()
+	<-s.ended
+}
+
+// TestSyncKeepsFewQueueReads: while the run follows a sync through a
+// hundred queue reads, its memory does not grow by what those reads showed
+// (State: the selection and each followed sync's baseline).
+func TestSyncKeepsFewQueueReads(t *testing.T) {
+	srv := fakebazarr.New(t, fakebazarr.Config{Library: syncLibrary()})
+	readSize := heavyQueueRead(srv)
+	// The sync's job stays pending: the run follows it, reading the queue.
+	s := startSync(t, srv, "--movie-id", "7", "--no-forced", "--concurrency", "1")
+	s.until("a sync is followed", func() bool { return len(syncsSent(srv)) == 1 }, nil)
+	s.heapAcrossQueueReads(readSize)
+}
+
+// TestSyncJudgingAgainKeepsFewQueueReads: a judging that starts again pass
+// after pass, each read of the history answered only after retries past
+// the read limit, keeps no more of its queue reads than a run does.
+func TestSyncJudgingAgainKeepsFewQueueReads(t *testing.T) {
+	srv := fakebazarr.New(t, fakebazarr.Config{Library: syncLibrary()})
+	readSize := heavyQueueRead(srv)
+	s := startSync(t, srv, "--movie-id", "7", "--no-forced")
+	// The first judging cannot submit: no queue read is five seconds old.
+	s.idle()
+	var answered time.Time
+	srv.Respond(func(r fakebazarr.Request) fakebazarr.Behavior {
+		if !strings.Contains(r.Path, "history") {
+			return fakebazarr.Serve
+		}
+		if now := s.clock.Now(); answered.IsZero() || now.Sub(answered) <= 61*time.Second {
+			if answered.IsZero() {
+				answered = now
+			}
+			return fakebazarr.Status(http.StatusServiceUnavailable)
+		}
+		answered = s.clock.Now()
+		return fakebazarr.Serve
+	})
+	s.heapAcrossQueueReads(readSize)
+	if got := syncsSent(srv); len(got) != 0 {
+		t.Errorf("syncs sent %q while every judging started again", got)
 	}
 }
