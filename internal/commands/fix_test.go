@@ -224,9 +224,9 @@ func TestFixStop(t *testing.T) {
 	}
 }
 
-// removeHILibrary holds, per video, the cases of G25's rule while the
-// choice between G25 as written and a rule following where Bazarr writes
-// is open: a subtitle either rule skips is skipped.
+// removeHILibrary holds, per video, the cases of G25's rule: Bazarr writes
+// remove-hi's result in place of the video's subtitle of that language that
+// is neither hearing-impaired nor forced.
 var removeHILibrary = fakebazarr.Library{
 	Movies: []fakebazarr.Movie{
 		{RadarrID: 1, Title: "Alpha", Subtitles: []fakebazarr.Subtitle{
@@ -236,8 +236,8 @@ var removeHILibrary = fakebazarr.Library{
 			{Path: "/m/a.fr.hi.srt", Language: "fr", HI: true}, // its only sibling in another language: applied
 		}},
 		{RadarrID: 2, Title: "Bravo", Subtitles: []fakebazarr.Subtitle{
-			{Path: "/m/b.en.forced.hi.srt", Language: "en", Forced: true, HI: true}, // beside a forced non-HI: skipped
-			{Path: "/m/b.en.forced.srt", Language: "en", Forced: true},              // beside a forced HI only: applied
+			{Path: "/m/b.en.forced.hi.srt", Language: "en", Forced: true, HI: true}, // no plain en, first of its language: applied
+			{Path: "/m/b.en.forced.srt", Language: "en", Forced: true},              // would write over the first's result: skipped
 		}},
 		{RadarrID: 3, Title: "Charlie", Subtitles: []fakebazarr.Subtitle{
 			{Path: "/m/c.en.forced.srt", Language: "en", Forced: true}, // Bazarr would write over the plain en: skipped
@@ -265,9 +265,9 @@ var removeHILibrary = fakebazarr.Library{
 }
 
 var (
-	removeHIApplied = []string{"/m/a.en.srt", "/m/a.es.srt", "/m/a.fr.hi.srt", "/m/b.en.forced.srt", "/m/c.en.srt",
+	removeHIApplied = []string{"/m/a.en.srt", "/m/a.es.srt", "/m/a.fr.hi.srt", "/m/b.en.forced.hi.srt", "/m/c.en.srt",
 		"/m/e.en.forced.srt", "/tv/f1.en.hi.srt", "/tv/f2.en.srt"}
-	removeHISkipped = []string{"/m/a.en.hi.srt", "/m/b.en.forced.hi.srt", "/m/c.en.forced.srt", "/m/d.en.1.srt",
+	removeHISkipped = []string{"/m/a.en.hi.srt", "/m/b.en.forced.srt", "/m/c.en.forced.srt", "/m/d.en.1.srt",
 		"/m/d.en.2.srt", "/m/e.en.hi.srt"}
 )
 
@@ -314,7 +314,7 @@ func TestRemoveHIRule(t *testing.T) {
 func TestRemoveHISkips(t *testing.T) {
 	srv := fakebazarr.New(t, fakebazarr.Config{Library: removeHILibrary})
 	o := runAgainst(t, srv, "fix", "remove-hi", "--hi", "--yes")
-	want := []string{"/m/a.fr.hi.srt", "/m/e.en.hi.srt", "/tv/f1.en.hi.srt"} // Echo's forced is not selected, so not fixed first
+	want := []string{"/m/a.fr.hi.srt", "/m/b.en.forced.hi.srt", "/m/e.en.hi.srt", "/tv/f1.en.hi.srt"} // Echo's forced is not selected, so not fixed first
 	if p := patchedPaths(srv); o.code != 0 || !slices.Equal(p, want) {
 		t.Errorf("--hi: code %d, fixed %q, want %q (G25)", o.code, p, want)
 	}

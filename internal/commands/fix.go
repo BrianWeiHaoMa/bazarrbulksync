@@ -40,13 +40,12 @@ func videoLanguageOf(s bazarr.Subtitle) videoLanguage {
 }
 
 // removeHISkip is G25's rule, judged from the library as read and from the
-// run's own earlier requests. Bazarr 1.6.2 writes remove-hi's result in
-// place of the video's subtitle of that language that is neither
-// hearing-impaired nor forced, whatever the fixed subtitle's flags,
-// removing the fixed file. Which rule `fix remove-hi` keeps awaits the
-// project owner's decision between G25 as written and one that follows
-// where Bazarr writes; until then a subtitle either rule skips is skipped,
-// so no fix is sent that either rule forbids.
+// subtitles this run has already let through. Bazarr 1.6.2 writes
+// remove-hi's result in place of the video's subtitle of that language that
+// is neither hearing-impaired nor forced, whatever the fixed subtitle's
+// flags, removing the fixed file; so a subtitle is skipped when its video
+// has such a subtitle of its language, or when the run has let an earlier
+// subtitle of its video and language through, whatever Bazarr answered.
 func removeHISkip(lib bazarr.Library) func(bazarr.Subtitle) reporter.SkipReason {
 	byVideoLanguage := map[videoLanguage][]bazarr.Subtitle{}
 	for _, s := range lib.Subtitles() {
@@ -65,9 +64,7 @@ func removeHISkip(lib bazarr.Library) func(bazarr.Subtitle) reporter.SkipReason 
 			if other.Path == sub.Path {
 				continue
 			}
-			asWritten := sub.HI && !other.HI && other.Forced == sub.Forced
-			whereWritten := !other.HI && !other.Forced
-			if asWritten || whereWritten {
+			if !other.HI && !other.Forced {
 				return reporter.ReplacesNonHI
 			}
 		}
