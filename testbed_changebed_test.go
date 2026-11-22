@@ -97,12 +97,21 @@ func (b *changeBed) execTyped(t *testing.T, typed string, args ...string) (resul
 	t.Helper()
 	b.forget()
 	r := runProduct(t, b.env(), typed, args)
+	b.keyKept(t, args, r)
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return r, b.sent()
+}
+
+// keyKept stops the check, before the run's output reaches the log, when
+// the last run put the key in a URL or printed it (R2).
+func (b *changeBed) keyKept(t *testing.T, args []string, r result) {
+	t.Helper()
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.keyInURL || strings.Contains(r.stdout+r.stderr, b.APIKey) {
 		t.Fatalf("%q put the API key in a URL or printed it", args)
 	}
-	return r, b.sent()
 }
 
 // env is the environment of each run: the proxy's address, the key, and
@@ -424,11 +433,7 @@ func (b *changeBed) live(t *testing.T, args []string, onLine func(line string, s
 		t.Fatalf("%q: %v", args, err)
 	}
 	r.stdout = stdout.String() + r.stdout
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.keyInURL || strings.Contains(r.stdout+r.stderr, b.APIKey) {
-		t.Fatalf("%q put the API key in a URL or printed it", args)
-	}
+	b.keyKept(t, args, r)
 	return r
 }
 

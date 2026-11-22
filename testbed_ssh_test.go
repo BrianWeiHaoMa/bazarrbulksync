@@ -17,24 +17,75 @@ import (
 	"time"
 )
 
-// sshHost is a machine reached through one SSH control connection, which
-// carries every run, copy, look, and forward.
-type sshHost struct {
+// sshConn is one SSH control connection to a machine, which carries every
+// run, copy, look, and forward there.
+type sshConn struct {
 	alias   string
 	control string // the control socket's path here
 	master  *exec.Cmd
-	scratch string // the scratch folder there
 	mu      sync.Mutex
-	made    int          // folders made in scratch
 	ports   map[int]bool // ports forwarded from there to here
 }
 
-func dialSSH(alias string) (*sshHost, error) {
+// remoteHost is a machine the bed checks run the product on over SSH: a
+// POSIX one (posixHost) or a Windows one (windowsHost, in
+// testbed_sshwindows_test.go). Each keeps a scratch folder in the user's
+// home holding the executable, every run's folder, and every state file
+// and home a check gives a run there, removed by close.
+type remoteHost interface {
+	// install copies the executable into the scratch folder unchanged, and
+	// checks there that it is the file given and that a run finds no Go.
+	install(exe, sum string) (path, system string, err error)
+	start(exe string, env runEnv, args []string) (*productRun, error)
+	atTerminal(exe string, env runEnv, typed string, args []string, deadline time.Duration) (result, error)
+	// fromNull runs exe to its end with its standard input redirected
+	// from the system's null device.
+	fromNull(exe string, env runEnv, args []string, deadline time.Duration) (result, error)
+	folder() (string, error)
+	join(elem ...string) string
+	readFile(path string) ([]byte, error)
+	exists(path string) (bool, error)
+	close() error
+	name() string
+}
+
+// posixHost is a macOS or Linux machine whose user's shell is POSIX sh or
+// zsh.
+type posixHost struct {
+	*sshConn
+	scratch string // the scratch folder there
+	made    int    // folders made in scratch, counted under sshConn.mu
+}
+
+// dialSSH connects to alias and returns the host it is, by its shell.
+func dialSSH(alias string) (remoteHost, error) {
+	c, err := connectSSH(alias)
+	if err != nil {
+		return nil, err
+	}
+	// cmd.exe expands %OS% to Windows_NT; a POSIX shell prints it as is.
+	out, err := c.shell("echo %OS%", nil)
+	if err != nil {
+		return nil, errors.Join(fmt.Errorf("asking %s for its system: %w", alias, err), c.closeConn())
+	}
+	if strings.TrimSpace(out) == "Windows_NT" {
+		return dialWindows(c)
+	}
+	s := &posixHost{sshConn: c}
+	out, err = s.shell(`mktemp -d "$HOME/bazarrbulksync-checks.XXXXXX"`, nil)
+	if err != nil {
+		return nil, errors.Join(fmt.Errorf("making the scratch folder on %s: %w", alias, err), s.closeConn())
+	}
+	s.scratch = strings.TrimSpace(out)
+	return s, nil
+}
+
+func connectSSH(alias string) (*sshConn, error) {
 	local, err := os.MkdirTemp("", "bazarrbulksync-ssh-")
 	if err != nil {
 		return nil, err
 	}
-	s := &sshHost{alias: alias, control: filepath.Join(local, "control"), ports: map[int]bool{}}
+	s := &sshConn{alias: alias, control: filepath.Join(local, "control"), ports: map[int]bool{}}
 	s.master = exec.Command("ssh", "-N", "-o", "ControlMaster=yes", "-o", "ControlPersist=no", "-o", "ControlPath="+s.control,
 		"-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=15", alias)
 	var masterErr bytes.Buffer
@@ -54,17 +105,29 @@ func dialSSH(alias string) (*sshHost, error) {
 			return nil, fmt.Errorf("ssh %s: no connection within 30s: %s", alias, masterErr.String())
 		}
 	}
-	out, err := s.shell(`mktemp -d "$HOME/bazarrbulksync-checks.XXXXXX"`, nil)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("making the scratch folder on %s: %w", alias, err), s.close())
-	}
-	s.scratch = strings.TrimSpace(out)
 	return s, nil
+}
+
+func (c *sshConn) name() string { return c.alias }
+
+// closeConn ends the connection.
+func (c *sshConn) closeConn() error {
+	_ = exec.Command("ssh", "-o", "ControlPath="+c.control, "-O", "exit", c.alias).Run()
+	done := make(chan struct{})
+	go func() { _ = c.master.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		_ = c.master.Process.Kill()
+		<-done
+	}
+	os.RemoveAll(filepath.Dir(c.control))
+	return nil
 }
 
 // close ends every run left in the scratch folder, removes the folder, and
 // ends the connection; a folder left there is an error.
-func (s *sshHost) close() error {
+func (s *posixHost) close() error {
 	var errs []error
 	if s.scratch != "" {
 		script := `for p in ` + shQuote(s.scratch) + `/*/pid; do test -f "$p" && ` + s.runAlive(`"$p"`, `kill -KILL "$pid"`) + `; done; ` +
@@ -73,38 +136,28 @@ func (s *sshHost) close() error {
 			errs = append(errs, fmt.Errorf("removing %s on %s: %w", s.scratch, s.alias, err))
 		}
 	}
-	_ = exec.Command("ssh", "-o", "ControlPath="+s.control, "-O", "exit", s.alias).Run()
-	done := make(chan struct{})
-	go func() { _ = s.master.Wait(); close(done) }()
-	select {
-	case <-done:
-	case <-time.After(10 * time.Second):
-		_ = s.master.Process.Kill()
-		<-done
-	}
-	os.RemoveAll(filepath.Dir(s.control))
-	return errors.Join(errs...)
+	return errors.Join(append(errs, s.closeConn())...)
 }
 
 // runAlive is shell text that runs then, with $pid set, when the run whose
 // process ID is in the file pidFile is still there: its process ID names a
 // process whose command holds the scratch folder, so that a reused ID is
 // never taken for it.
-func (s *sshHost) runAlive(pidFile, then string) string {
+func (s *posixHost) runAlive(pidFile, then string) string {
 	return `{ pid=$(cat ` + pidFile + `); case "$(ps -p "$pid" -o command= 2>/dev/null)" in *` + shQuote(s.scratch+"/") + `*) ` + then + `;; esac; }`
 }
 
 // command prepares ssh running script with the user's shell there.
-func (s *sshHost) command(script string, extra ...string) *exec.Cmd {
-	args := append([]string{"-o", "ControlPath=" + s.control, "-o", "BatchMode=yes"}, extra...)
-	return exec.Command("ssh", append(args, s.alias, script)...)
+func (c *sshConn) command(script string, extra ...string) *exec.Cmd {
+	args := append([]string{"-o", "ControlPath=" + c.control, "-o", "BatchMode=yes"}, extra...)
+	return exec.Command("ssh", append(args, c.alias, script)...)
 }
 
 // shell runs script there to its end, with in as its standard input, and
 // returns its standard output; a nonzero exit is an error naming its
 // standard error.
-func (s *sshHost) shell(script string, in io.Reader) (string, error) {
-	cmd := s.command(script)
+func (c *sshConn) shell(script string, in io.Reader) (string, error) {
+	cmd := c.command(script)
 	cmd.Stdin = in
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -114,9 +167,7 @@ func (s *sshHost) shell(script string, in io.Reader) (string, error) {
 	return stdout.String(), nil
 }
 
-// install copies the executable into the scratch folder unchanged, and
-// checks there that it is the file given and that nothing finds Go.
-func (s *sshHost) install(exe, sum string) (path, system string, err error) {
+func (s *posixHost) install(exe, sum string) (path, system string, err error) {
 	file, err := os.Open(exe)
 	if err != nil {
 		return "", "", err
@@ -143,8 +194,10 @@ func (s *sshHost) install(exe, sum string) (path, system string, err error) {
 	return path, system, nil
 }
 
+func (s *posixHost) join(elem ...string) string { return strings.Join(elem, "/") }
+
 // folder makes a new empty folder in the scratch folder.
-func (s *sshHost) folder() (string, error) {
+func (s *posixHost) folder() (string, error) {
 	s.mu.Lock()
 	s.made++
 	dir := fmt.Sprintf("%s/%d", s.scratch, s.made)
@@ -153,7 +206,7 @@ func (s *sshHost) folder() (string, error) {
 	return dir, err
 }
 
-func (s *sshHost) readFile(path string) ([]byte, error) {
+func (s *posixHost) readFile(path string) ([]byte, error) {
 	out, err := s.shell("if test -e "+shQuote(path)+" || test -L "+shQuote(path)+"; then cat "+shQuote(path)+"; else exit 3; fi", nil)
 	var exit *exec.ExitError
 	if errors.As(err, &exit) && exit.ExitCode() == 3 {
@@ -162,7 +215,7 @@ func (s *sshHost) readFile(path string) ([]byte, error) {
 	return []byte(out), err
 }
 
-func (s *sshHost) exists(path string) (bool, error) {
+func (s *posixHost) exists(path string) (bool, error) {
 	// A folder that cannot be searched is an error, as it is to Lstat, never
 	// an absence.
 	dir, base := path[:strings.LastIndex(path, "/")+1], path[strings.LastIndex(path, "/")+1:]
@@ -177,7 +230,7 @@ func (s *sshHost) exists(path string) (bool, error) {
 // forward makes the address in rawURL, when it reaches a listener here,
 // reach the same listener from the same port there. An address nothing
 // listens on here is left alone, so it reaches nothing there either.
-func (s *sshHost) forward(rawURL string) error {
+func (s *sshConn) forward(rawURL string) error {
 	u, err := url.Parse(rawURL)
 	if err != nil || u.Host == "" {
 		return nil // the product names what it was given
@@ -220,7 +273,7 @@ func isLoopback(host string) bool {
 // run's process ID first written into a new folder, so that the run can be
 // interrupted and looked for. Every value is quoted, so the user's shell
 // there hands each argument over as given.
-func (s *sshHost) runScript(exe string, env runEnv, args []string) (dir, script string, err error) {
+func (s *posixHost) runScript(exe string, env runEnv, args []string) (dir, script string, err error) {
 	if err := s.forward(env.url); err != nil {
 		return "", "", err
 	}
@@ -238,12 +291,28 @@ func (s *sshHost) runScript(exe string, env runEnv, args []string) (dir, script 
 	return dir, "echo $$ > " + shQuote(dir+"/pid") + " && " + strings.Join(words, " "), nil
 }
 
-func (s *sshHost) start(exe string, env runEnv, args []string) (*productRun, error) {
+func (s *posixHost) start(exe string, env runEnv, args []string) (*productRun, error) {
+	return s.startWith(exe, env, args, "")
+}
+
+func (s *posixHost) fromNull(exe string, env runEnv, args []string, deadline time.Duration) (result, error) {
+	run, err := s.startWith(exe, env, args, " < /dev/null")
+	if err != nil {
+		return result{}, err
+	}
+	timer := time.AfterFunc(deadline, run.kill)
+	defer timer.Stop()
+	return run.wait()
+}
+
+// startWith starts exe as start does, with redirect appended to the
+// command that runs it.
+func (s *posixHost) startWith(exe string, env runEnv, args []string, redirect string) (*productRun, error) {
 	dir, script, err := s.runScript(exe, env, args)
 	if err != nil {
 		return nil, err
 	}
-	cmd := s.command(script)
+	cmd := s.command(script + redirect)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.StdoutPipe()
@@ -273,7 +342,7 @@ func (s *sshHost) start(exe string, env runEnv, args []string) (*productRun, err
 // atTerminal runs exe with a terminal there as its standard input, typed
 // into it; its standard output and error go to files beside it, read
 // afterwards, since ssh carries a terminal's output as one stream.
-func (s *sshHost) atTerminal(exe string, env runEnv, typed string, args []string, deadline time.Duration) (result, error) {
+func (s *posixHost) atTerminal(exe string, env runEnv, typed string, args []string, deadline time.Duration) (result, error) {
 	dir, script, err := s.runScript(exe, env, args)
 	if err != nil {
 		return result{}, err
@@ -315,14 +384,14 @@ func (s *sshHost) atTerminal(exe string, env runEnv, typed string, args []string
 }
 
 // signal sends the run in dir the signal named sig.
-func (s *sshHost) signal(dir, sig string) error {
+func (s *posixHost) signal(dir, sig string) error {
 	_, err := s.shell("kill -"+sig+` "$(cat `+shQuote(dir+"/pid")+`)"`, nil)
 	return err
 }
 
 // ended returns the run's exit code from the ssh command that carried the
 // run in dir, and checks that no process of the run is left there.
-func (s *sshHost) ended(dir string, cmd *exec.Cmd, err error, sshErr string) (int, error) {
+func (s *posixHost) ended(dir string, cmd *exec.Cmd, err error, sshErr string) (int, error) {
 	var exit *exec.ExitError
 	if err != nil && !errors.As(err, &exit) {
 		return 0, err

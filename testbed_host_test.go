@@ -26,11 +26,12 @@ import (
 //	BAZARRBULKSYNC_SSH=<ssh host alias>   (optional: run it there)
 //
 // The executable is copied, here into a temporary folder, on an SSH host
-// into a scratch folder in the user's home, which also holds every state file and home a check gives a
-// run there; the folder, the runs, and the connection end with the test
-// binary (closeHost). Each address a run is given that reaches a listener
-// here is forwarded from the same port on the host's loopback, so a run
-// there is given the very address a run here gets.
+// into a scratch folder in the user's home (remoteHost), which also holds
+// every state file and home a check gives a run there; the folder, the
+// runs, and the connection end with the test binary (closeHost). Each
+// address a run is given that reaches a listener here is forwarded from the
+// same port on the host's loopback, so a run there is given the very
+// address a run here gets.
 const (
 	executableVar = "BAZARRBULKSYNC_EXECUTABLE"
 	sshVar        = "BAZARRBULKSYNC_SSH"
@@ -38,14 +39,16 @@ const (
 
 // productHost is where the bed checks run the product.
 type productHost struct {
-	exe    string   // the executable, as a run where it is names it
-	system string   // GOOS of the machine it runs on
-	ssh    *sshHost // nil when the product runs here
-	copied string   // the folder here holding the copy of a given executable
+	exe    string     // the executable, as a run where it is names it
+	system string     // GOOS of the machine it runs on
+	remote remoteHost // nil when the product runs here
+	copied string     // the folder here holding the copy of a given executable
 }
 
 // runEnv is all of the environment a run gets: the two connection variables
-// and, where a check puts the default state file under test, HOME.
+// and, where a check puts the default state file under test, home, the
+// folder P1 computes it from: HOME, or on Windows AppData. A run on Windows
+// also gets what Windows needs (windowsRun).
 type runEnv struct {
 	url, key, home string
 }
@@ -104,10 +107,10 @@ func setUpHost() (*productHost, error) {
 	}
 	h := &productHost{system: runtime.GOOS}
 	if alias != "" {
-		if h.ssh, err = dialSSH(alias); err != nil {
+		if h.remote, err = dialSSH(alias); err != nil {
 			return nil, err
 		}
-		h.exe, h.system, err = h.ssh.install(exe, sum)
+		h.exe, h.system, err = h.remote.install(exe, sum)
 	} else {
 		h.exe, err = h.install(exe, sum)
 	}
@@ -149,8 +152,8 @@ func (h *productHost) install(exe, sum string) (string, error) {
 
 func (h *productHost) close() error {
 	var err error
-	if h.ssh != nil {
-		err = h.ssh.close()
+	if h.remote != nil {
+		err = h.remote.close()
 	}
 	if h.copied != "" {
 		err = errors.Join(err, os.RemoveAll(h.copied))
@@ -159,10 +162,10 @@ func (h *productHost) close() error {
 }
 
 func (h *productHost) where() string {
-	if h.ssh == nil {
+	if h.remote == nil {
 		return "this machine (" + h.system + ")"
 	}
-	return h.ssh.alias + " (" + h.system + ")"
+	return h.remote.name() + " (" + h.system + ")"
 }
 
 func fileSHA256(path string) (string, error) {
@@ -186,8 +189,8 @@ type productRun struct {
 // not a terminal.
 func (h *productHost) start(env runEnv, args []string) (*productRun, error) {
 	start := startHere
-	if h.ssh != nil {
-		start = h.ssh.start
+	if h.remote != nil {
+		start = h.remote.start
 	}
 	run, err := start(h.exe, env, args)
 	if err != nil {
@@ -243,8 +246,8 @@ func startHere(exe string, env runEnv, args []string) (*productRun, error) {
 func (h *productHost) runToEnd(env runEnv, typed string, args []string, deadline time.Duration) (result, error) {
 	if typed != "" {
 		atTerminal := runAtTerminalHere
-		if h.ssh != nil {
-			atTerminal = h.ssh.atTerminal
+		if h.remote != nil {
+			atTerminal = h.remote.atTerminal
 		}
 		r, err := atTerminal(h.exe, env, typed, args, deadline)
 		return r, hideKey(err, env.key)
@@ -256,6 +259,19 @@ func (h *productHost) runToEnd(env runEnv, typed string, args []string, deadline
 	timer := time.AfterFunc(deadline, run.kill)
 	defer timer.Stop()
 	return run.wait()
+}
+
+// runFromNull runs the product to its end with its standard input
+// redirected from the system's null device, a character device that is not
+// a terminal.
+func (h *productHost) runFromNull(env runEnv, args []string, deadline time.Duration) (result, error) {
+	if h.remote == nil {
+		// startHere leaves standard input unset, which os/exec opens from
+		// the null device.
+		return h.runToEnd(env, "", args, deadline)
+	}
+	r, err := h.remote.fromNull(h.exe, env, args, deadline)
+	return r, hideKey(err, env.key)
 }
 
 // bedRun runs the product to its end with url and key, as runExecutable
@@ -286,10 +302,10 @@ func (h *productHost) stateFile(t *testing.T) string {
 // folder returns a new empty folder where the product runs.
 func (h *productHost) folder(t *testing.T) string {
 	t.Helper()
-	if h.ssh == nil {
+	if h.remote == nil {
 		return t.TempDir()
 	}
-	dir, err := h.ssh.folder()
+	dir, err := h.remote.folder()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,30 +314,30 @@ func (h *productHost) folder(t *testing.T) string {
 
 // join joins path elements as the system where the product runs does.
 func (h *productHost) join(elem ...string) string {
-	if h.ssh == nil {
+	if h.remote == nil {
 		return filepath.Join(elem...)
 	}
-	return strings.Join(elem, "/")
+	return h.remote.join(elem...)
 }
 
 // readFile reads a file where the product runs; a missing file is
 // fs.ErrNotExist.
 func (h *productHost) readFile(path string) ([]byte, error) {
-	if h.ssh == nil {
+	if h.remote == nil {
 		return os.ReadFile(path)
 	}
-	return h.ssh.readFile(path)
+	return h.remote.readFile(path)
 }
 
 // exists reports whether anything, a dangling link included, is at path
 // where the product runs.
 func (h *productHost) exists(path string) (bool, error) {
-	if h.ssh == nil {
+	if h.remote == nil {
 		_, err := os.Lstat(path)
 		if errors.Is(err, fs.ErrNotExist) {
 			return false, nil
 		}
 		return err == nil, err
 	}
-	return h.ssh.exists(path)
+	return h.remote.exists(path)
 }

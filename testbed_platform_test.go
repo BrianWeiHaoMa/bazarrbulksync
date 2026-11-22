@@ -5,19 +5,22 @@ import (
 	"io/fs"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
 )
 
 // TestBedPlatform checks against the test bed what only the system the
-// product runs on can show: the confirmation at a terminal, which rests on
-// the system's terminal query (G12), and the default state file's path (P1).
+// product runs on can show: the confirmation at a terminal, and its refusal
+// on the null device and a pipe, which rest on the system's terminal query
+// (G12), and the default state file's path (P1), where two failures are
+// recorded by rename as a run records them.
 // The product runs where testbed_host_test.go says. On a fresh bed:
 //
 //	BAZARRBULKSYNC_TESTBED=$PWD/testbed/run/bed.json BAZARRBULKSYNC_TESTBED_PLATFORM=1 \
 //	go test -count=1 . -run TestBedPlatform
 //
-// It deletes one Spanish subtitle and leaves a failed sync in Bazarr.
+// It deletes one Spanish subtitle and leaves two failed syncs in Bazarr.
 const platformVar = "BAZARRBULKSYNC_TESTBED_PLATFORM"
 
 func TestBedPlatform(t *testing.T) {
@@ -38,6 +41,19 @@ func TestBedPlatform(t *testing.T) {
 		r, _ := b.exec(t, args...)
 		if r.code == 0 || r.stdout != "" || !strings.Contains(r.stderr, "--yes") || strings.Contains(r.stderr, asked) {
 			t.Errorf("stdin not a terminal: code %d, stdout %q, stderr %q; want --yes required without asking, nonzero", r.code, r.stdout, r.stderr)
+		}
+		b.sends(t, 0)
+
+		// Standard input the null device: a character device, and not a
+		// terminal.
+		b.forget()
+		r, err := h.runFromNull(b.env(), args, time.Minute)
+		if err != nil {
+			t.Fatalf("%q from the null device: %v", args, err)
+		}
+		b.keyKept(t, args, r)
+		if r.code == 0 || r.stdout != "" || !strings.Contains(r.stderr, "--yes") || strings.Contains(r.stderr, asked) {
+			t.Errorf("stdin the null device: code %d, stdout %q, stderr %q; want --yes required without asking, nonzero", r.code, r.stdout, r.stderr)
 		}
 		b.sends(t, 0)
 
@@ -64,27 +80,36 @@ func TestBedPlatform(t *testing.T) {
 	})
 
 	t.Run("default state file", func(t *testing.T) {
-		// P1's configuration directory, under a home of the check's own.
-		under := map[string][]string{
-			"linux":  {".config"},
-			"darwin": {"Library", "Application Support"},
+		// P1's configuration directory, under a home (on Windows, the
+		// AppData folder itself) of the check's own.
+		under, ok := map[string][]string{
+			"linux":   {".config"},
+			"darwin":  {"Library", "Application Support"},
+			"windows": {},
 		}[h.system]
-		if under == nil {
+		if !ok {
 			t.Fatalf("no P1 path for %s here", h.system)
 		}
 		b.home = h.folder(t)
 		defer func() { b.home = "" }()
-		want := h.join(append(append([]string{b.home}, under...), "bazarrbulksync", "state.json")...)
+		below := append(under, "bazarrbulksync", "state.json")
+		want := h.join(append([]string{b.home}, below...)...)
 
 		if r := b.run(t, 0, "sync", "--help"); !strings.Contains(r.stdout, "The default state file is "+want+"\n") {
 			t.Errorf("sync --help prints %q; want the default state file %s (P1)", r.stdout, want)
 		}
-		noFile(t, h.join(b.home, under[0]))
-		// recordFailureAt requires the failure recorded at want.
-		_, args, _ := b.recordFailureAt(t, want)
-		r := b.live(t, args, nil)
-		if r.code != 0 || r.stdout != "\nTotal: 1 of 1 selected subtitle\nskipped (earlier failure) 1\n" {
-			t.Errorf("the next run: code %d, stdout %q, stderr %q; want it skipped for its earlier failure, exit zero", r.code, r.stdout, r.stderr)
+		noFile(t, h.join(b.home, below[0]))
+		// recordFailureAt requires each failure recorded at want: the
+		// second is written over the first by rename.
+		first, _, _ := b.recordFailureAt(t, "de", want)
+		second, _, _ := b.recordFailureAt(t, "it", want)
+		if !b.recorded(t, want, b.proxy, first.Path) {
+			t.Errorf("after the second failure the state file holds no failure for %s", first.Path)
+		}
+		noFile(t, want+".tmp")
+		r := b.live(t, []string{"sync", "--yes", "--movies", "--language", "de", "--language", "it", "--reference", "a:5"}, nil)
+		if r.code != 0 || r.stdout != "\nTotal: 2 of 2 selected subtitles\nskipped (earlier failure) 2\n" {
+			t.Errorf("the next run: code %d, stdout %q, stderr %q; want %s and %s skipped for their earlier failures, exit zero", r.code, r.stdout, r.stderr, first.Path, second.Path)
 		}
 		b.sends(t, 0)
 	})

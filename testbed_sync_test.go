@@ -239,21 +239,22 @@ func TestBedSync(t *testing.T) {
 // the subtitle, args, and the subtitle's list line.
 func (b *changeBed) recordFailure(t *testing.T, state string) (sub bazarr.Subtitle, args []string, line string) {
 	t.Helper()
-	return b.recordFailureAt(t, state, "--state-file", state)
+	return b.recordFailureAt(t, "de", state, "--state-file", state)
 }
 
-// recordFailureAt makes the failure as recordFailure does, the run given
-// stateArgs, which leave its state file at state.
-func (b *changeBed) recordFailureAt(t *testing.T, state string, stateArgs ...string) (sub bazarr.Subtitle, args []string, line string) {
+// recordFailureAt makes the failure as recordFailure does, on the one movie
+// subtitle in language lang, the run given stateArgs, which leave its state
+// file at state.
+func (b *changeBed) recordFailureAt(t *testing.T, lang, state string, stateArgs ...string) (sub bazarr.Subtitle, args []string, line string) {
 	t.Helper()
-	de := b.selected(t, "--language", "de", "--movies")
-	if len(de) != 1 {
-		t.Fatalf("the bed placed %d German movie subtitles, want 1", len(de))
+	movie := b.selected(t, "--language", lang, "--movies")
+	if len(movie) != 1 {
+		t.Fatalf("the bed placed %d movie subtitles in %s, want 1", len(movie), lang)
 	}
-	sub = de[0]
+	sub = movie[0]
 	b.needNoSync(t, sub)
 	// The video has one audio track.
-	args = append([]string{"sync", "--yes", "--language", "de", "--movies", "--reference", "a:5"}, stateArgs...)
+	args = append([]string{"sync", "--yes", "--language", lang, "--movies", "--reference", "a:5"}, stateArgs...)
 	line = b.listLine(t, sub)
 
 	r := b.live(t, args, nil)
