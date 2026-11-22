@@ -40,6 +40,34 @@ func TestTestbed(t *testing.T) {
 	for _, d := range m.Differences(lib) {
 		t.Error(d)
 	}
+	// The reads a sync is judged from: on a freshly provisioned bed no
+	// subtitle has an event or a sync job, and each video shows its
+	// subtitles as the library read did.
+	queue, _, err := client.Queue(ctx)
+	if err != nil {
+		t.Fatalf("queue read: %v", err)
+	}
+	for _, sub := range m.Subtitles {
+		if queue.HasSyncOf(sub.Path) {
+			t.Errorf("the queue shows a sync job of %s", sub.Path)
+		}
+		events, _, err := client.Events(ctx, sub, nil)
+		if err != nil || len(events) != 0 {
+			t.Errorf("events of %s: %q, %v; want none", sub.Path, events.Identities(), err)
+		}
+		video, _, err := client.VideoNow(ctx, sub)
+		if err != nil || !video.Listed || !slices.Contains(video.Subtitles, sub) {
+			t.Errorf("video of %s: %+v, %v; want it listed with the subtitle", sub.Path, video, err)
+		}
+	}
+	gone := m.Subtitles[0]
+	gone.MovieID, gone.EpisodeID = 99999, 99999
+	if video, retried, err := client.VideoNow(ctx, gone); err != nil || bool(retried) || video.Listed {
+		t.Errorf("video Bazarr lacks: %+v, retried %v, %v; want a successful read showing it unlisted", video, retried, err)
+	}
+	if start, _, err := client.StartTime(ctx); err != nil || bazarr.Restarted(client.Status().StartTime, start) {
+		t.Errorf("start time %q, %v; want the connection check's %q", start, err, client.Status().StartTime)
+	}
 	// The embedded tracks are in Bazarr's answer, as entries without a path,
 	// so their absence above is the client leaving them out.
 	if got := embeddedInAnswer(t, m); len(m.Embedded) == 0 || !slices.Equal(got, m.Embedded) {

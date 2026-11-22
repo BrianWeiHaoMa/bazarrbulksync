@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -284,5 +285,108 @@ func TestChangeLimit(t *testing.T) {
 		}
 		clock.Advance(time.Hour)
 		await(t, done)
+	}
+}
+
+func TestSyncParameters(t *testing.T) {
+	srv, client := changeServer(t, nil, bazarr.Limits{})
+	base := func(sub bazarr.Subtitle, id string) url.Values {
+		return url.Values{"action": {"sync"}, "language": {sub.Language}, "path": {sub.Path}, "type": {string(sub.Type)},
+			"id": {id}, "forced": {pyBool(sub.Forced)}, "hi": {pyBool(sub.HI)}}
+	}
+	with := func(v url.Values, name, value string) url.Values {
+		v.Set(name, value)
+		return v
+	}
+	every := base(episodeSub, "41")
+	for name, value := range map[string]string{"reference": "s:3", "max_offset_seconds": "120", "no_fix_framerate": "True", "gss": "True"} {
+		every.Set(name, value)
+	}
+	for _, tc := range []struct {
+		name string
+		sub  bazarr.Subtitle
+		opts bazarr.SyncOptions
+		want url.Values
+	}{
+		// G16: no option given, none sent, not even with a default.
+		{"movie, no option", movieSub, bazarr.SyncOptions{}, base(movieSub, "7")},
+		// The episode's own ID, never the series ID.
+		{"episode, no option", episodeSub, bazarr.SyncOptions{}, base(episodeSub, "41")},
+		{"reference a:N", movieSub, bazarr.SyncOptions{Reference: "a:0"}, with(base(movieSub, "7"), "reference", "a:0")},
+		{"reference path", movieSub, bazarr.SyncOptions{Reference: "/movies/Amélie/Amélie.de.srt"},
+			with(base(movieSub, "7"), "reference", "/movies/Amélie/Amélie.de.srt")},
+		{"max offset", movieSub, bazarr.SyncOptions{MaxOffsetSeconds: 1}, with(base(movieSub, "7"), "max_offset_seconds", "1")},
+		{"no fix framerate", movieSub, bazarr.SyncOptions{NoFixFramerate: true}, with(base(movieSub, "7"), "no_fix_framerate", "True")},
+		{"gss", movieSub, bazarr.SyncOptions{GSS: true}, with(base(movieSub, "7"), "gss", "True")},
+		{"every option", episodeSub, bazarr.SyncOptions{Reference: "s:3", MaxOffsetSeconds: 120, NoFixFramerate: true, GSS: true}, every},
+	} {
+		res, err := client.Sync(context.Background(), tc.sub, tc.opts)
+		if err != nil || res.Outcome != bazarr.Accepted {
+			t.Errorf("%s: %+v, %v; want accepted", tc.name, res, err)
+		}
+		changes := changesReceived(srv)
+		r := changes[len(changes)-1]
+		if r.Method != http.MethodPatch || r.Path != "/api/subtitles" || r.Body != "" {
+			t.Errorf("%s: %s %s with body %q, want PATCH /api/subtitles with the parameters in the query", tc.name, r.Method, r.Path, r.Body)
+		}
+		if got := r.Params(); fmt.Sprint(got) != fmt.Sprint(tc.want) {
+			t.Errorf("%s: parameters %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func pyBool(b bool) string {
+	if b {
+		return "True"
+	}
+	return "False"
+}
+
+// A sync is sent once whatever becomes of it, also when Bazarr queued it
+// and its answer was lost, and Bazarr queues it once.
+func TestSyncSentOnce(t *testing.T) {
+	for name, b := range map[string]fakebazarr.Behavior{
+		"500": fakebazarr.Status(500), "503": fakebazarr.Status(503), "dropped": fakebazarr.Drop, "held": fakebazarr.Hold,
+		"queued, then 504": fakebazarr.Applied(fakebazarr.Status(504)), "queued, then dropped": fakebazarr.Applied(fakebazarr.Drop),
+		"queued, then held": fakebazarr.Applied(fakebazarr.Hold),
+	} {
+		clock := fakeclock.New(t)
+		srv, client := changeServer(t, clock, bazarr.Limits{})
+		srv.SetStartTime("1763800000.5")
+		var reads atomic.Int32
+		srv.Respond(func(r fakebazarr.Request) fakebazarr.Behavior {
+			if r.Method != http.MethodGet {
+				return b
+			}
+			if reads.Add(1) <= 2 { // the start-time read fails twice
+				return fakebazarr.Status(503)
+			}
+			return fakebazarr.Serve
+		})
+		done := inBackground(func() (bazarr.ChangeResult, error) {
+			return client.Sync(context.Background(), episodeSub, bazarr.SyncOptions{GSS: true})
+		})
+		if b == fakebazarr.Hold || b == fakebazarr.Applied(fakebazarr.Hold) {
+			heldUntilLimit(t, srv, clock)
+		}
+		want := bazarr.Unanswered
+		if b == fakebazarr.Status(500) {
+			want = bazarr.Refused
+		} else {
+			for range 2 {
+				clock.Advance(clock.WaitSleep())
+			}
+		}
+		out := await(t, done)
+		if n := len(changesReceived(srv)); n != 1 {
+			t.Errorf("%s: Bazarr received the sync %d times, want once", name, n)
+		}
+		if out.err != nil || out.res.Outcome != want || (want == bazarr.Unanswered && out.res.StartTime != "1763800000.5") {
+			t.Errorf("%s: %+v, %v; want outcome %v, with the start time read after an unanswered one", name, out.res, out.err, want)
+		}
+		_, queued := srv.SyncJob(episodeSub.Path)
+		if applied := b != fakebazarr.Status(500) && strings.HasPrefix(name, "queued"); queued != applied {
+			t.Errorf("%s: the fake queued the sync: %v, want %v", name, queued, applied)
+		}
 	}
 }

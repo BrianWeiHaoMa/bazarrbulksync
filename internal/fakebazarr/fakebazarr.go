@@ -85,6 +85,8 @@ type Behavior struct {
 	kind   int
 	status int
 	body   string
+	// apply makes the change first, as Serve would (Applied).
+	apply bool
 }
 
 const (
@@ -108,6 +110,14 @@ var (
 	// Drop reads the request and closes the connection without an answer.
 	Drop = Behavior{kind: kindDrop}
 )
+
+// Applied makes the change a request asks for, as Serve would, then
+// answers as b does: a sync queued whose answer is held, dropped, or
+// replaced by a proxy's 504.
+func Applied(b Behavior) Behavior {
+	b.apply = true
+	return b
+}
 
 // Status answers with the HTTP status code and no Bazarr answer.
 func Status(code int) Behavior { return Behavior{kind: kindStatus, status: code} }
@@ -157,6 +167,12 @@ type Server struct {
 	requests []Request
 	held     chan Request
 	closing  chan struct{}
+	// The job queue, the histories, and whether events repeat (queue.go,
+	// history.go); guarded by mu.
+	jobs         []*job
+	lastJobID    int
+	histories    map[videoKey][]Event
+	repeatEvents bool
 }
 
 // New starts a fake Bazarr, closed when the test ends.
@@ -256,6 +272,9 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	if respond != nil {
 		behavior = respond(req)
 	}
+	if behavior.apply && behavior.kind != kindServe {
+		s.applyChange(r)
+	}
 	switch behavior.kind {
 	case kindHold:
 		s.held <- req
@@ -303,7 +322,8 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	call := strings.TrimPrefix(r.URL.Path, apiPrefix)
 	ch, isChange := changes[call]
-	if !isChange && !slices.Contains([]string{"system/status", "movies", "series", "episodes"}, call) {
+	if !isChange && !slices.Contains([]string{"system/status", "system/jobs", "movies", "series", "episodes",
+		"movies/history", "episodes/history"}, call) {
 		// Bazarr 1.6.2 answers a call it does not have, even under /api/ and
 		// without a key, with its web page and HTTP 200, as seen on the test
 		// bed.
@@ -341,6 +361,12 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 			"start_time":      json.RawMessage(startTime),
 			"package_version": "", "operating_system": "Linux", "python_version": "3.12.8",
 		}}
+	case "system/jobs":
+		answer = s.queue()
+	case "movies/history":
+		answer = s.history("movie", r.URL.Query().Get("radarrid"))
+	case "episodes/history":
+		answer = s.history("episode", r.URL.Query().Get("episodeid"))
 	case "movies":
 		answer = s.movies(ids(r, "radarrid[]"))
 	case "series":

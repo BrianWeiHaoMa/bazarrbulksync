@@ -7,6 +7,7 @@ import (
 	"path"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 // change is how the fake answers one changing call: its method, and the
@@ -65,10 +66,10 @@ func quote(s string) string {
 	return string(b)
 }
 
-// patchSubtitles answers PATCH subtitles for a fix, as Bazarr 1.6.2 does:
-// every action word is taken as a modification's name and accepted for an
-// existing SRT file, even a word Bazarr has no modification for, which it
-// then applies nothing for. The sync form lands with sync.
+// patchSubtitles answers PATCH subtitles as Bazarr 1.6.2 does: `sync`
+// queues a sync job (queue.go) for any subtitle file; every other action
+// word is taken as a modification's name and accepted for an existing SRT
+// file, even a word Bazarr has no modification for.
 func (s *Server) patchSubtitles(q url.Values) (int, string) {
 	got, bad := parse(q,
 		param{name: "action", help: `Action from ["sync", "translate", "extract" or mods name]`},
@@ -95,10 +96,23 @@ func (s *Server) patchSubtitles(q url.Values) (int, string) {
 	} else if s.movie(id) == nil {
 		return http.StatusNotFound, reason("Movie not found")
 	}
+	if got["action"] == "sync" {
+		s.queueSync(subPath, videoKey{got["type"], id})
+		return http.StatusNoContent, ""
+	}
 	if path.Ext(subPath) != ".srt" {
 		return http.StatusConflict, reason("Unable to take action on subtitles file. Check logs.")
 	}
 	return http.StatusNoContent, ""
+}
+
+// applyChange makes the change r asks for as Serve would, and discards
+// the answer, for a behavior that answers otherwise (Applied).
+func (s *Server) applyChange(r *http.Request) {
+	call := strings.TrimPrefix(r.URL.Path, s.cfg.BasePath+"/api/")
+	if ch, ok := changes[call]; ok && r.Method == ch.method && r.Header.Get("X-API-KEY") == s.cfg.APIKey {
+		ch.answer(s, r.URL.Query())
+	}
 }
 
 // deleteMovieSubtitles answers DELETE movies/subtitles: the subtitle at path

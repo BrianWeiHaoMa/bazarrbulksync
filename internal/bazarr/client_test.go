@@ -78,6 +78,24 @@ func TestLimitsWithinRetryWindow(t *testing.T) {
 	clock.Advance(time.Hour)
 }
 
+// The client tells the read limit in effect, which the judging of a sync
+// compares the time its reads took against.
+func TestReadLimitTold(t *testing.T) {
+	srv := fakebazarr.New(t, fakebazarr.Config{})
+	for _, tc := range []struct {
+		limits bazarr.Limits
+		want   time.Duration
+	}{
+		{bazarr.Limits{}, 60 * time.Second},
+		{bazarr.Limits{Read: 7 * time.Second, Change: 9 * time.Second}, 7 * time.Second},
+		{bazarr.Limits{Read: 6 * time.Minute}, 5 * time.Minute},
+	} {
+		if got := connect(t, srv, nil, tc.limits).ReadLimit(); got != tc.want {
+			t.Errorf("limits %+v: read limit %v, want %v", tc.limits, got, tc.want)
+		}
+	}
+}
+
 func TestDefaultLimits(t *testing.T) {
 	if bazarr.DefaultLimits.Read != 60*time.Second {
 		t.Errorf("DefaultLimits.Read = %v, want 60s until measured (T1)", bazarr.DefaultLimits.Read)

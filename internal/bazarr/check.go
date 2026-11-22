@@ -192,3 +192,18 @@ func validIdentifiers(s string) bool {
 	}
 	return true
 }
+
+// StartTime reads Bazarr's start time, a read under G3, as Bazarr's own
+// text, which compares with Status().StartTime and with any other read.
+func (c *Client) StartTime(ctx context.Context) (string, Retried, error) {
+	var answer *statusAnswer
+	retried, err := c.read(ctx, "system/status", nil, func() any { answer = &statusAnswer{}; return answer })
+	if err != nil {
+		return "", retried, err
+	}
+	return answer.Data.StartTime.String(), retried, nil
+}
+
+// Restarted reports whether Bazarr has restarted between two reads of its
+// start time: the start time is set once when Bazarr starts (S3).
+func Restarted(earlier, now string) bool { return earlier != now }

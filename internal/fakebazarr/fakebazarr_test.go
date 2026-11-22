@@ -105,3 +105,54 @@ func TestChangesAnswerAsBazarr(t *testing.T) {
 		t.Errorf("after the deletes: movies %s episodes %s; want the deleted subtitles gone, the others listed", movies, episodes)
 	}
 }
+
+// The queue and the histories answer in the shapes the test bed's Bazarr
+// 1.6.2 gave: an ended job stays listed, history entries carry no
+// identifier, and both calls need the key.
+func TestSyncAnswersAsBazarr(t *testing.T) {
+	srv := fakebazarr.New(t, fakebazarr.Config{Library: fakebazarr.Library{
+		Movies: []fakebazarr.Movie{{RadarrID: 2, Title: "Sintel", Subtitles: []fakebazarr.Subtitle{
+			{Path: "/m/Sintel.de.srt", Language: "de"}, {Path: "/m/Sintel.en.ass", Language: "en"}}}},
+	}})
+	key := srv.APIKey()
+	sync := "action=sync&forced=False&hi=False&language=de&path=%2Fm%2FSintel.de.srt&type=movie&id=2"
+	if code, body := send(t, srv, "PATCH", "subtitles", sync, key); code != 204 || body != "" {
+		t.Errorf("sync: %d %q, want 204 and no body", code, body)
+	}
+	id, ok := srv.SyncJob("/m/Sintel.de.srt")
+	if !ok {
+		t.Fatal("no job queued")
+	}
+	srv.AddJob("Synced movies with Radarr", fakebazarr.JobCompleted)
+	srv.SetJob(id, fakebazarr.JobRunning)
+	srv.SyncRan(id, "11/22/26 09:17:04")
+	srv.SetJob(id, fakebazarr.JobCompleted)
+	_, jobs := send(t, srv, "GET", "system/jobs", "", key)
+	for _, want := range []string{`{"data":[{`, `"job_name":"Synced movies with Radarr"`, `"job_name":"Synced /m/Sintel.de.srt"`, `"status":"completed"`} {
+		if !strings.Contains(jobs, want) {
+			t.Errorf("system/jobs %s: want it to hold %s", jobs, want)
+		}
+	}
+	_, history := send(t, srv, "GET", "movies/history", "radarrid=2", key)
+	for _, want := range []string{`"action":5`, `"parsed_timestamp":"11/22/26 09:17:04"`, `"subtitles_path":"/m/Sintel.de.srt"`, `"radarrId":2`} {
+		if !strings.Contains(history, want) {
+			t.Errorf("movies/history %s: want it to hold %s", history, want)
+		}
+	}
+	if strings.Contains(history, `"id":`) {
+		t.Errorf("movies/history %s: Bazarr gives entries no identifier", history)
+	}
+	// Bazarr 1.6.0 repeats each entry once per external subtitle (S4).
+	srv.RepeatEvents(true)
+	if _, repeated := send(t, srv, "GET", "movies/history", "radarrid=2", key); strings.Count(repeated, `"action":5`) != 2 {
+		t.Errorf("movies/history with repeats: %s, want the event twice", repeated)
+	}
+	if _, other := send(t, srv, "GET", "movies/history", "radarrid=3", key); !strings.HasPrefix(other, `{"data":[],`) {
+		t.Errorf("history of a movie without events: %s, want no entries", other)
+	}
+	for _, call := range []string{"system/jobs", "movies/history", "episodes/history"} {
+		if code, _ := send(t, srv, "GET", call, "", "wrong"); code != 401 {
+			t.Errorf("%s with a wrong key: %d, want 401", call, code)
+		}
+	}
+}

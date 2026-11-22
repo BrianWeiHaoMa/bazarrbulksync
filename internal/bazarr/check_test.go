@@ -249,3 +249,40 @@ func TestCheckStopped(t *testing.T) {
 		t.Fatalf("err = %v, want ErrStopped", err)
 	}
 }
+
+// The start time is Bazarr's own text, equal to the connection check's
+// until Bazarr restarts (S3); its read is a read under G3.
+func TestStartTime(t *testing.T) {
+	clock := fakeclock.New(t)
+	// Python writes a whole-second start time with ".0", which a float
+	// round trip would drop.
+	srv := fakebazarr.New(t, fakebazarr.Config{StartTime: "1795336532.0"})
+	client := connect(t, srv, clock, bazarr.Limits{})
+	start, retried, err := client.StartTime(context.Background())
+	if err != nil || bool(retried) || start != "1795336532.0" || start != client.Status().StartTime ||
+		bazarr.Restarted(client.Status().StartTime, start) {
+		t.Errorf("start time %q, retried %v, %v; want Bazarr's text, the check's, not restarted", start, retried, err)
+	}
+	srv.Restart("1795339195.8429735")
+	srv.Respond(func(r fakebazarr.Request) fakebazarr.Behavior {
+		if r.N == 3 {
+			return fakebazarr.Status(503)
+		}
+		return fakebazarr.Serve
+	})
+	type result struct {
+		start   string
+		retried bazarr.Retried
+		err     error
+	}
+	done := make(chan result, 1)
+	go func() {
+		start, retried, err := client.StartTime(context.Background())
+		done <- result{start, retried, err}
+	}()
+	clock.Advance(clock.WaitSleep())
+	res := await(t, done)
+	if res.err != nil || !bool(res.retried) || res.start != "1795339195.8429735" || !bazarr.Restarted(client.Status().StartTime, res.start) {
+		t.Errorf("after a restart: %q, retried %v, %v; want the new start time after a retry, restarted", res.start, res.retried, res.err)
+	}
+}

@@ -32,8 +32,8 @@ const (
 var Fixes = []Fix{FixRemoveHI, FixRemoveTags, FixOCR, FixCommon, FixUppercase, FixEmoji}
 
 // action is the word `PATCH subtitles` names fix by. Bazarr 1.6.2 accepts a
-// word it does not know, even a differently cased one, with HTTP 204 and
-// applies nothing, so each word is exactly the technical specification's.
+// word it does not know, even a differently cased one, with HTTP 204, so
+// each word is exactly the technical specification's.
 func (f Fix) action() (string, bool) {
 	switch f {
 	case FixRemoveHI:
@@ -92,20 +92,52 @@ func (c *Client) Fix(ctx context.Context, sub Subtitle, fix Fix) (ChangeResult, 
 	if !ok {
 		return ChangeResult{}, fmt.Errorf("fix %d: %w", fix, errUnknownFix)
 	}
-	id := sub.MovieID
-	if sub.Type == TypeEpisode {
-		id = sub.EpisodeID // never the series ID, which `list` prints
+	return c.change(ctx, http.MethodPatch, "subtitles", subtitleQuery(action, sub))
+}
+
+// SyncOptions are the sync options of F8 a sync request carries; the zero
+// value of each is the option not given, which the request leaves out (G16).
+type SyncOptions struct {
+	// Reference is "a:N" or "s:N" as given, or the path of the reference
+	// subtitle the caller resolved from "lang:CODE".
+	Reference string
+	// MaxOffsetSeconds is at least 1 when given.
+	MaxOffsetSeconds int
+	NoFixFramerate   bool
+	GSS              bool
+}
+
+// Sync asks Bazarr once to synchronize sub, with the same result as Fix.
+// Bazarr queues the sync and answers before it runs (S1).
+func (c *Client) Sync(ctx context.Context, sub Subtitle, opts SyncOptions) (ChangeResult, error) {
+	query := subtitleQuery("sync", sub)
+	if opts.Reference != "" {
+		query.Set("reference", opts.Reference)
 	}
-	query := url.Values{
+	if opts.MaxOffsetSeconds > 0 {
+		query.Set("max_offset_seconds", strconv.Itoa(opts.MaxOffsetSeconds))
+	}
+	// Bazarr reads these two as given only when they are "True".
+	if opts.NoFixFramerate {
+		query.Set("no_fix_framerate", "True")
+	}
+	if opts.GSS {
+		query.Set("gss", "True")
+	}
+	return c.change(ctx, http.MethodPatch, "subtitles", query)
+}
+
+// subtitleQuery is what `PATCH subtitles` needs to name sub for action.
+func subtitleQuery(action string, sub Subtitle) url.Values {
+	return url.Values{
 		"action":   {action},
 		"language": {sub.Language},
 		"path":     {sub.Path},
 		"type":     {string(sub.Type)},
-		"id":       {strconv.Itoa(id)},
+		"id":       {strconv.Itoa(sub.Video().ID)}, // an episode's own ID, never the series ID `list` prints
 		"forced":   {pyBool(sub.Forced)},
 		"hi":       {pyBool(sub.HI)},
 	}
-	return c.change(ctx, http.MethodPatch, "subtitles", query)
 }
 
 // Delete asks Bazarr once to delete sub, with the same result as Fix.
@@ -159,7 +191,7 @@ func (c *Client) change(ctx context.Context, method, call string, query url.Valu
 		c.failingSince = sent
 	}
 	c.lastFailure = fmt.Errorf("%s %s: %w", method, call, failure)
-	startTime, _, err := c.readStartTime(ctx)
+	startTime, _, err := c.StartTime(ctx)
 	return ChangeResult{Outcome: Unanswered, StartTime: startTime}, err
 }
 
@@ -240,14 +272,4 @@ func (c *Client) refusalReason(code int, body []byte) string {
 		return (&statusError{code: code}).Error()
 	}
 	return text
-}
-
-// readStartTime reads Bazarr's start time, a read under G3.
-func (c *Client) readStartTime(ctx context.Context) (string, Retried, error) {
-	var answer *statusAnswer
-	retried, err := c.read(ctx, "system/status", nil, func() any { answer = &statusAnswer{}; return answer })
-	if err != nil {
-		return "", retried, err
-	}
-	return answer.Data.StartTime.String(), retried, nil
 }

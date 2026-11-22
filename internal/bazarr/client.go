@@ -30,7 +30,7 @@ const (
 type Limits struct {
 	// Read limits each read, the connection check included.
 	Read time.Duration
-	// Change limits each fix or delete request.
+	// Change limits each sync, fix, or delete request.
 	Change time.Duration
 }
 
@@ -98,6 +98,9 @@ type Client struct {
 
 // Status returns what the connection check read.
 func (c *Client) Status() Status { return c.status }
+
+// ReadLimit is the time limit each read carries (T1).
+func (c *Client) ReadLimit() time.Duration { return c.limits.Read }
 
 func newClient(conn Connection, base *url.URL) *Client {
 	clock := conn.Clock
@@ -238,6 +241,17 @@ func (c *Client) get(ctx context.Context, call string, query url.Values, into an
 // succeeds or RetryWindow has passed since c.failingSince, which also cuts
 // short the attempt in flight.
 func (c *Client) read(ctx context.Context, call string, query url.Values, into func() any) (Retried, error) {
+	_, retried, err := c.timedRead(ctx, call, query, into)
+	return retried, err
+}
+
+// answeredRead is when the attempt that succeeded was sent and when its
+// answer was complete, on the client's clock.
+type answeredRead struct{ sent, answered time.Time }
+
+// timedRead is read, also telling when the attempt that succeeded was sent
+// and answered.
+func (c *Client) timedRead(ctx context.Context, call string, query url.Values, into func() any) (answeredRead, Retried, error) {
 	wait := firstRetryWait
 	retried := Retried(false)
 	for {
@@ -246,17 +260,17 @@ func (c *Client) read(ctx context.Context, call string, query url.Values, into f
 		if !c.failingSince.IsZero() {
 			left := c.failingSince.Add(RetryWindow).Sub(sent)
 			if left <= 0 {
-				return retried, &UnreachableError{Address: c.address, Last: c.lastFailure}
+				return answeredRead{}, retried, &UnreachableError{Address: c.address, Last: c.lastFailure}
 			}
 			limit = min(limit, left)
 		}
 		err := c.attempt(ctx, call, query, into(), limit)
 		if err == nil {
 			c.failingSince, c.lastFailure = time.Time{}, nil
-			return retried, nil
+			return answeredRead{sent: sent, answered: c.clock.Now()}, retried, nil
 		}
 		if errors.Is(err, ErrStopped) {
-			return retried, ErrStopped
+			return answeredRead{}, retried, ErrStopped
 		}
 		if c.failingSince.IsZero() {
 			c.failingSince = sent
@@ -265,10 +279,10 @@ func (c *Client) read(ctx context.Context, call string, query url.Values, into f
 		retried = true
 		left := c.failingSince.Add(RetryWindow).Sub(c.clock.Now())
 		if left <= 0 {
-			return retried, &UnreachableError{Address: c.address, Last: c.lastFailure}
+			return answeredRead{}, retried, &UnreachableError{Address: c.address, Last: c.lastFailure}
 		}
 		if c.clock.Sleep(ctx, min(wait, left)) != nil {
-			return retried, ErrStopped
+			return answeredRead{}, retried, ErrStopped
 		}
 		wait = min(wait*2, maxRetryWait)
 	}
