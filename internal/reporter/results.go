@@ -3,6 +3,7 @@ package reporter
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -93,8 +94,27 @@ func (r *Reporter) Skip(s bazarr.Subtitle, reason SkipReason, dryRun bool) {
 	if dryRun {
 		r.writeOut(resultLine(wouldSkip, s, string(reason)))
 	}
-	r.count("skipped (" + string(reason) + ")")
+	r.count(skipLabel(reason))
 }
+
+// Unskip takes back a subtitle counted as skipped for reason: it is no
+// longer done, and the run reports it again under the outcome it then gets,
+// so that each subtitle is counted once (G14).
+func (r *Reporter) Unskip(reason SkipReason) {
+	t := &r.run
+	label := skipLabel(reason)
+	if t.counts[label] == 0 {
+		return
+	}
+	t.counts[label]--
+	if t.counts[label] == 0 {
+		t.labels = slices.DeleteFunc(t.labels, func(l string) bool { return l == label })
+	}
+	t.done--
+	r.drawProgress()
+}
+
+func skipLabel(reason SkipReason) string { return "skipped (" + string(reason) + ")" }
 
 func resultLine(word string, s bazarr.Subtitle, reason string) string {
 	line := word + "  " + subtitleLine(s)

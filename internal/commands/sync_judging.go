@@ -88,9 +88,7 @@ func judge(ctx context.Context, c *bazarr.Client, clock bazarr.Clock, sel select
 		j.Baseline = baseline{StartTime: startTime, Identities: events.Identities()}
 		j.Options = opts.Bazarr
 		recorded, hasRecord := store.Lookup(sel.Path)
-		j.Lapsed = hasRecord && slices.ContainsFunc(j.Baseline.Identities, func(id string) bool {
-			return !slices.Contains(recorded, id)
-		})
+		j.Lapsed = hasRecord && lapsed(recorded, j.Baseline.Identities)
 		var reference string
 		if opts.ReferenceLanguage != "" {
 			reference = referenceSubtitle(video.Subtitles, opts.ReferenceLanguage)
@@ -113,6 +111,13 @@ func judge(ctx context.Context, c *bazarr.Client, clock bazarr.Clock, sel select
 		}
 		return j, nil
 	}
+}
+
+// lapsed reports whether a recorded failure holding the identities
+// recorded has lapsed: the subtitle's events of kinds 1 to 6, as
+// identities, include one the record does not hold (G21).
+func lapsed(recorded, identities []string) bool {
+	return slices.ContainsFunc(identities, func(id string) bool { return !slices.Contains(recorded, id) })
 }
 
 // referenceSubtitle is F8's reference subtitle for lang:CODE among the

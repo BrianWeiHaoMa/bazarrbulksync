@@ -19,8 +19,8 @@ const queueGap = 5 * time.Second
 
 // syncRun is one real `sync` run: one loop, at most one request in flight,
 // that fills the run's slots with submissions, lets subtitles wait under
-// G18 without a slot, and follows each submitted sync to its outcome
-// (G15 to G20).
+// G18 without a slot, follows each submitted sync to its outcome
+// (G15 to G20), and keeps the state file's records (G21 to G23).
 type syncRun struct {
 	c     *bazarr.Client
 	clock bazarr.Clock
@@ -30,9 +30,13 @@ type syncRun struct {
 	subs  []selection.Selected
 	// next is the first selected subtitle not yet judged.
 	next int
-	// waiting are the subtitles waiting under G18, as indexes of subs in
-	// P2's order; they hold no slot.
+	// waiting are the subtitles to judge again, as indexes of subs in P2's
+	// order: those waiting under G18, and those skipped for an earlier
+	// failure once the store cannot be used. They hold no slot.
 	waiting []int
+	// skippedForFailure are the subtitles skipped for an earlier failure,
+	// as indexes of subs, until the store becomes unusable (G23).
+	skippedForFailure []int
 	// followed are the submitted syncs, each holding a slot until its
 	// outcome is reported (G17).
 	followed []*followedSync
@@ -196,10 +200,8 @@ func (r *syncRun) clearOf(path string, from int, at time.Time) (clear, seen bool
 	return false, false
 }
 
-// handle judges sel from Bazarr as read just now and acts on the verdict:
-// it skips the subtitle, submits it, or lets it wait under G18. moved is
-// false when the subtitle waits only for the five-second rule, which no
-// other subtitle can meet sooner, so the run lets time pass.
+// handle judges subs[i] from Bazarr as read just now and acts on the
+// verdict (act); a record the judging found lapsed is then removed.
 func (r *syncRun) handle(ctx context.Context, i int) (moved bool, err error) {
 	sel := r.subs[i]
 	if r.following(sel.Path) {
@@ -211,6 +213,20 @@ func (r *syncRun) handle(ctx context.Context, i int) (moved bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	moved, err = r.act(ctx, i, j)
+	if j.Lapsed {
+		// Removed at once (State), but after the act: nothing may come
+		// between the judging's reads and a submission (G15, G18).
+		r.wrote(r.store.Forget(sel.Path))
+	}
+	return moved, err
+}
+
+// act skips subs[i], submits it, or lets it wait under G18, as the judgment
+// j says. moved is false when the subtitle waits only for the five-second
+// rule, which no other subtitle can meet sooner, so the run lets time pass.
+func (r *syncRun) act(ctx context.Context, i int, j judgment) (moved bool, err error) {
+	sel := r.subs[i]
 	switch j.Skip {
 	case "":
 	case reporter.SyncInBazarr:
@@ -218,6 +234,9 @@ func (r *syncRun) handle(ctx context.Context, i int) (moved bool, err error) {
 		return true, nil
 	default:
 		r.rep.Skip(j.Subtitle, j.Skip, false)
+		if j.Skip == reporter.EarlierFailure {
+			r.skippedForFailure = append(r.skippedForFailure, i)
+		}
 		return true, nil
 	}
 	clear, seen := r.clearOf(sel.Path, 0, j.Queues[len(j.Queues)-1].Sent)
@@ -278,15 +297,25 @@ func (r *syncRun) reportEnded(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		synced, restarted := newSync(events, f.base), bazarr.Restarted(f.base.StartTime, startTime)
+		if synced || restarted || !f.accepted {
+			// Not a failure Bazarr ran, which records the path anew: the
+			// events just read may show the path's record lapsed (State).
+			r.forgetIfLapsed(f.sel.Path, events.Identities())
+		}
 		switch {
-		case newSync(events, f.base):
+		case synced:
 			r.rep.Result(reporter.Synced, f.sub, "")
-		case bazarr.Restarted(f.base.StartTime, startTime):
+		case restarted:
 			r.rep.Result(reporter.Unconfirmed, f.sub, "Bazarr restarted")
 			r.notDone = true
 		case f.accepted:
 			// Bazarr ran the sync and recorded none (G19's second case),
-			// unlike a refusal, which submit reports.
+			// unlike a refusal, which submit reports. The failure is on disk
+			// before its line, so that no kill after the line loses it (G22).
+			if r.store.Err() == nil {
+				r.wrote(r.store.Record(f.sel.Path, f.base.Identities))
+			}
 			r.rep.Result(reporter.Failed, f.sub, "Bazarr recorded no sync")
 			r.notDone = true
 		default:
@@ -296,6 +325,31 @@ func (r *syncRun) reportEnded(ctx context.Context) error {
 		r.followed = slices.Delete(r.followed, i, i+1)
 	}
 	return nil
+}
+
+// forgetIfLapsed removes the record of path when the events' identities
+// show it lapsed (G21).
+func (r *syncRun) forgetIfLapsed(path string, identities []string) {
+	if recorded, ok := r.store.Lookup(path); ok && lapsed(recorded, identities) {
+		r.wrote(r.store.Forget(path))
+	}
+}
+
+// wrote takes the result of a write of the state file. When the write
+// failed, the store has become unusable: the run says so, once, and from
+// then on runs as if no failure were recorded, judging again each subtitle
+// it skipped for an earlier failure, which is no longer counted as done
+// (G23, Failure store).
+func (r *syncRun) wrote(err error) {
+	if err == nil {
+		return
+	}
+	storeUnusable(r.rep, err.Error())
+	for _, i := range r.skippedForFailure {
+		r.rep.Unskip(reporter.EarlierFailure)
+		r.wait(i)
+	}
+	r.skippedForFailure = nil
 }
 
 // newSync reports whether events hold a sync event that base does not.

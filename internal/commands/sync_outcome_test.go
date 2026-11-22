@@ -156,6 +156,7 @@ func TestSyncUnanswered(t *testing.T) {
 		if outcomeOf(t, o.stdout, sintelEs) != "synced" || (o.code == 0) == !wrote {
 			t.Errorf("wrote %v: exit %d\n%s", wrote, o.code, o.stdout)
 		}
+		noStateFile(t, s.state) // an unconfirmed sync is never recorded (G20)
 	}
 }
 
@@ -284,6 +285,7 @@ func TestSyncStop(t *testing.T) {
 		if n := len(srv.Requests()); n != sent {
 			t.Errorf("%s: %d requests after the stop", during, n-sent)
 		}
+		noStateFile(t, s.state) // a sync left to Bazarr is never recorded (G4)
 	}
 }
 

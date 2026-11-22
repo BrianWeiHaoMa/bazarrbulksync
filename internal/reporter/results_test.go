@@ -125,3 +125,23 @@ func TestRedaction(t *testing.T) {
 		t.Errorf("standard error %q, want the escaped key hidden and the rest kept", got)
 	}
 }
+
+// TestUnskip: a subtitle taken back from a skip count is no longer done, so
+// that, reported again under its new outcome, it is counted once; a reason
+// whose count falls to zero leaves the totals (G14).
+func TestUnskip(t *testing.T) {
+	var out, errOut bytes.Buffer
+	rep := reporter.New(&out, &errOut)
+	rep.Selected(2)
+	rep.Skip(movieSub, reporter.EarlierFailure, false)
+	rep.Result(reporter.Failed, episodeSub, "no sync")
+	rep.Unskip(reporter.EarlierFailure)
+	rep.Result(reporter.Synced, movieSub, "")
+	rep.Totals()
+	if got := out.String(); !strings.HasSuffix(got, "\nTotal: 2 of 2 selected subtitles\nfailed 1, synced 1\n") {
+		t.Errorf("standard output %q", got)
+	}
+	if got := errOut.String(); got != "1 of 2 subtitles done\n2 of 2 subtitles done\n1 of 2 subtitles done\n2 of 2 subtitles done\n" {
+		t.Errorf("progress %q", got)
+	}
+}

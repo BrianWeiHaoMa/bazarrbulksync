@@ -15,7 +15,7 @@ import (
 // (runSyncs). With --dry-run it judges each selected subtitle in P2's
 // order from Bazarr as read just then and reports whether it would be
 // submitted or why not (G13), sending no changing request and writing no
-// state file.
+// state file; only the real run records and forgets failures.
 func runSync(ctx context.Context, conn bazarr.Connection, req *invocation.Request, rep *reporter.Reporter) error {
 	clock := conn.Clock
 	if clock == nil {
@@ -55,10 +55,15 @@ func loadStore(opts invocation.SyncOptions, address string, rep *reporter.Report
 	store := failurestore.Load(opts.StateFile, address)
 	switch {
 	case opts.StateFile == "":
-		rep.Error("the state file cannot be used: its default path cannot be resolved (" + opts.StateFileProblem +
-			"); going on as if no failure were recorded")
+		storeUnusable(rep, "its default path cannot be resolved ("+opts.StateFileProblem+")")
 	case store.Err() != nil:
-		rep.Error("the state file cannot be used: " + store.Err().Error() + "; going on as if no failure were recorded")
+		storeUnusable(rep, store.Err().Error())
 	}
 	return store
+}
+
+// storeUnusable says that the state file cannot be used, and why: said once
+// a run, when loading or the first write fails (G23).
+func storeUnusable(rep *reporter.Reporter, cause string) {
+	rep.Error("the state file cannot be used: " + cause + "; going on as if no failure were recorded")
 }
