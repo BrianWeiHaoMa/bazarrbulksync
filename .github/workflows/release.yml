@@ -1,9 +1,10 @@
 # Pushing a tag vX.Y.Z publishes release X.Y.Z (F2): the six executables, with
 # their SHA256SUMS, on the GitHub release of the tag, and the image
 # wayhowma/bazarrbulksync:X.Y.Z on Docker Hub, also tagged latest when X.Y.Z
-# is the newest version. The tag's section of CHANGELOG.md becomes the release
-# notes. It needs the repository secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN
-# (a Docker Hub access token that can push to wayhowma/bazarrbulksync).
+# is the newest version. The tag's section of CHANGELOG.md, then the image's
+# tag, become the release notes. It needs the repository secrets
+# DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (a Docker Hub access token that can
+# push to wayhowma/bazarrbulksync).
 # Nothing is published until every check has passed, and the image pushes can
 # be repeated, so a failed run can be re-run once its cause is fixed; if it
 # failed while creating the GitHub release, delete that release first.
@@ -65,6 +66,7 @@ jobs:
             echo "::error::CHANGELOG.md has no section headed '## [$version]'."
             exit 1
           fi
+          printf "\nContainer image: \`%s:%s\`\n" "$IMAGE" "$version" >> "$RUNNER_TEMP/notes.md"
       # `go run ./release` builds both image platforms into the local image
       # store, which only the containerd image store can hold.
       - name: Switch Docker to the containerd image store
