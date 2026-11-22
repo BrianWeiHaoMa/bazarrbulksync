@@ -18,7 +18,7 @@ type Command string
 
 // commands is every command the program accepts, in the order its help
 // lists them. A new command is one file beside list.go and one entry here.
-var commands = []command{listCommand, deleteCommand}
+var commands = []command{listCommand, fixCommand, deleteCommand}
 
 // Request is a validated command line. The connection and the selection are
 // shared by every command; each command's own options sit in its field.
@@ -31,6 +31,8 @@ type Request struct {
 	Selection  selection.Criteria
 	List       ListOptions
 	Change     ChangeOptions
+	// Fix is the fix `fix` applies (F10).
+	Fix bazarr.Fix
 }
 
 // ChangeOptions are the options of the commands that change Bazarr (F7).
@@ -138,13 +140,15 @@ func (p parser) usage(cmd Command, format string, a ...any) *UsageError {
 }
 
 // parseCommand reads the arguments after cmd's name. Every argument must be
-// one of cmd's options or the value of the option before it: a stray word
-// anywhere is an error, never the end of the options (G1). --help gives the
-// command's help only when the rest of the line is valid, since G1 makes no
-// exception for it.
+// one of cmd's options, the value of the option before it, or the one word
+// cmd takes: a stray word anywhere is an error, never the end of the
+// options (G1). --help gives the command's help only when the rest of the
+// line is valid, since G1 makes no exception for it, but without the word
+// or a selection a command needs.
 func (p parser) parseCommand(cmd command, args []string, getenv func(string) string) (Result, error) {
 	req := &Request{Command: cmd.name}
 	given := map[string]bool{}
+	gotWord := false
 	help := false
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
@@ -155,6 +159,20 @@ func (p parser) parseCommand(cmd command, args []string, getenv func(string) str
 		if !strings.HasPrefix(arg, "--") || arg == "--" {
 			if strings.HasPrefix(arg, "-") {
 				return Result{}, p.usage(cmd.name, "unknown option %s", p.quote(arg))
+			}
+			if w := cmd.word; w != nil && !gotWord {
+				v := w.find(arg)
+				if v == nil {
+					return Result{}, p.usage(cmd.name, "unknown %s %s: %s is one of %s", w.noun, p.quote(arg), w.arg, w.list())
+				}
+				if err := v.set(req, arg); err != nil {
+					return Result{}, p.usage(cmd.name, "%s %s: %v", w.noun, p.quote(arg), err)
+				}
+				gotWord = true
+				continue
+			}
+			if cmd.word != nil {
+				return Result{}, p.usage(cmd.name, "unexpected argument %s: %s takes one %s", p.quote(arg), cmd.name, cmd.word.arg)
 			}
 			return Result{}, p.usage(cmd.name, "unexpected argument %s", p.quote(arg))
 		}
@@ -188,6 +206,9 @@ func (p parser) parseCommand(cmd command, args []string, getenv func(string) str
 	}
 	if help {
 		return Result{Text: commandHelp(cmd)}, nil
+	}
+	if w := cmd.word; w != nil && !gotWord {
+		return Result{}, p.usage(cmd.name, "%s needs %s, one of %s", cmd.name, w.arg, w.list())
 	}
 	if cmd.needsSelection && !slices.ContainsFunc(selectionOptions, func(o option) bool { return given[o.name] }) {
 		return Result{}, p.usage(cmd.name, "%s needs at least one selection option, such as --language or --title", cmd.name)

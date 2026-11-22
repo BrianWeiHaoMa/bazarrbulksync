@@ -20,8 +20,18 @@ const (
 	WouldDelete Outcome = "would delete"
 )
 
+// The outcomes of `fix` besides failed and unconfirmed (G24, G13).
+const (
+	Applied    Outcome = "applied"
+	WouldApply Outcome = "would apply"
+)
+
 // SkipReason is why a run skips a subtitle (P3).
 type SkipReason string
+
+// ReplacesNonHI: `fix remove-hi` skips a subtitle whose fix would have
+// Bazarr replace another subtitle (G25).
+const ReplacesNonHI SkipReason = "replaces non-HI subtitle"
 
 // wouldSkip opens the line of a subtitle a dry run would skip (P3).
 const wouldSkip = "would skip"

@@ -36,7 +36,17 @@ func programHelp() string {
 
 func commandHelp(cmd command) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Usage: bazarrbulksync %s [options]\n\n%s\n", cmd.name, cmd.about)
+	usage := string(cmd.name)
+	if cmd.word != nil {
+		usage += " " + cmd.word.arg
+	}
+	fmt.Fprintf(&b, "Usage: bazarrbulksync %s [options]\n\n%s\n", usage, cmd.about)
+	if w := cmd.word; w != nil {
+		fmt.Fprintf(&b, "\n%s is exactly one of:\n", w.arg)
+		for _, v := range w.values {
+			fmt.Fprintf(&b, "  %-22s %s\n", v.name, v.help)
+		}
+	}
 	writeOptions(&b, cmd.section+":", cmd.options)
 	selectionTitle := "Selection (with none, every external subtitle is selected):"
 	if cmd.needsSelection {

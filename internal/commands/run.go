@@ -80,6 +80,8 @@ func run(ctx context.Context, args []string, env Env) int {
 	switch req.Command {
 	case invocation.CommandList:
 		err = list(ctx, conn, req, rep)
+	case invocation.CommandFix:
+		err = runChanges(ctx, conn, req, rep, fixCommand(req.Fix))
 	case invocation.CommandDelete:
 		err = runChanges(ctx, conn, req, rep, deleteCommand)
 	default:

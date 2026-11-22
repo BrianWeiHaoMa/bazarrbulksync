@@ -19,8 +19,8 @@ import (
 // TestSkipRule: the shared run asks a command's skip rule, made from the
 // whole library as read, for each selected subtitle in order just before
 // acting; a skip has a line only under --dry-run, and is counted under its
-// reason either way (P3, G14). No command built yet has a rule, so the run
-// is driven here with delete's request and a rule of the test's.
+// reason either way (P3, G14). The run is driven here with delete's request
+// and a rule of the test's.
 func TestSkipRule(t *testing.T) {
 	lib := fakebazarr.Library{Movies: []fakebazarr.Movie{{RadarrID: 7, Title: "Sintel", Subtitles: []fakebazarr.Subtitle{
 		{Path: "/m/a.en.srt", Language: "en"}, {Path: "/m/b.en.srt", Language: "en"},

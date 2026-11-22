@@ -3,6 +3,7 @@ package invocation
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/bazarr"
 	"github.com/BrianWeiHaoMa/bazarrbulksync/internal/selection"
@@ -20,6 +21,9 @@ const (
 // selection options below are added to every command.
 type command struct {
 	name Command
+	// word is the one word the command takes besides its options, such as
+	// fix's name; nil when it takes none.
+	word *word
 	// summary is the command's line in the program's help.
 	summary string
 	// about opens the command's help.
@@ -30,6 +34,37 @@ type command struct {
 	// needsSelection makes a command line without a selection option a
 	// usage error (G26).
 	needsSelection bool
+}
+
+// word is a command's one positional word: exactly one of its values must
+// be given, anywhere among the options but never in an option's value's place.
+type word struct {
+	arg  string // its placeholder in usage and messages, such as "FIX"
+	noun string // what a value is called in messages, such as "fix"
+	// values are the words accepted, in help's order; each sets the request.
+	values []option
+}
+
+// find returns the value named v, or nil.
+func (w *word) find(v string) *option {
+	for i := range w.values {
+		if w.values[i].name == v {
+			return &w.values[i]
+		}
+	}
+	return nil
+}
+
+// list names every value, for a message: "a, b, or c".
+func (w *word) list() string {
+	names := make([]string, len(w.values))
+	for i, v := range w.values {
+		names[i] = v.name
+	}
+	if len(names) < 2 {
+		return strings.Join(names, "")
+	}
+	return strings.Join(names[:len(names)-1], ", ") + ", or " + names[len(names)-1]
 }
 
 // option is one option of a command. An option without arg is a flag.

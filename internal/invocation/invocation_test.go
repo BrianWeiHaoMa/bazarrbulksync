@@ -61,7 +61,7 @@ func TestUsageErrors(t *testing.T) {
 	for _, args := range [][]string{
 		// No command, and the commands this program does not have.
 		{},
-		{"sync"}, {"fix", "remove-hi"}, {"lst"}, {"help"}, {"LIST"},
+		{"sync"}, {"lst"}, {"help"}, {"LIST"},
 		// A stray word anywhere after the command.
 		{"list", "extra"},
 		{"list", "extra", "--language", "en"},
