@@ -71,7 +71,7 @@ type UnreachableError struct {
 }
 
 func (e *UnreachableError) Error() string {
-	return fmt.Sprintf("Bazarr at %s has not answered for %s: %v", e.Address, RetryWindow, e.Last)
+	return fmt.Sprintf("Bazarr at %s is unreachable: no answer for %v; last failure: %v", e.Address, RetryWindow, e.Last)
 }
 
 func (e *UnreachableError) Unwrap() error { return e.Last }

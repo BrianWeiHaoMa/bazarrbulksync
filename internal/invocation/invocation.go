@@ -60,7 +60,7 @@ func (e *UsageError) Hint() string {
 // environment through getenv. It returns a *UsageError for every command
 // line G1 names.
 func Parse(args []string, getenv func(string) string) (Result, error) {
-	p := parser{keys: apiKeys(args, getenv)}
+	p := parser{keys: APIKeys(args, getenv)}
 	if len(args) == 0 {
 		return Result{}, p.usage("", "no command given")
 	}
@@ -95,10 +95,10 @@ type parser struct {
 	keys []string
 }
 
-// apiKeys returns every value the API key may have on this command line:
+// APIKeys returns every value the API key may have on this command line:
 // the environment's and each value given to --api-key, so that no message
-// quotes one, wherever the parse stops.
-func apiKeys(args []string, getenv func(string) string) []string {
+// quotes one, wherever the parse stops, and whichever of them is used (R2).
+func APIKeys(args []string, getenv func(string) string) []string {
 	keys := []string{getenv(envAPIKey)}
 	for i, a := range args {
 		if v, ok := strings.CutPrefix(a, "--"+optAPIKey+"="); ok {

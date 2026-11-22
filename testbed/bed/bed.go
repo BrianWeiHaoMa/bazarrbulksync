@@ -6,6 +6,7 @@ package bed
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"slices"
 	"sort"
@@ -126,4 +127,58 @@ func (m Manifest) Differences(lib bazarr.Library) []string {
 		diffs = append(diffs, fmt.Sprintf("series %v, want %v in this order", series, m.Series))
 	}
 	return diffs
+}
+
+// ShownVideo is a movie or an episode as Bazarr's API answers it.
+type ShownVideo struct {
+	// Path is the video file's path.
+	Path string
+	// Subtitles holds the path of each of its subtitle entries, nil for an
+	// embedded track.
+	Subtitles []*string
+}
+
+// Shown reads Bazarr's movies and the episodes of the bed's series directly,
+// not through the client, so that checks can hold the client and the
+// program against Bazarr's own answer. It follows no redirect, which would
+// carry the key elsewhere.
+func (m Manifest) Shown() ([]ShownVideo, error) {
+	calls := []string{"movies"}
+	for _, s := range m.Series {
+		calls = append(calls, fmt.Sprintf("episodes?seriesid[]=%d", s.ID))
+	}
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	var videos []ShownVideo
+	for _, call := range calls {
+		req, err := http.NewRequest("GET", m.URL+"/api/"+call, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("X-API-KEY", m.APIKey)
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		var answer struct {
+			Data []struct {
+				Path      string `json:"path"`
+				Subtitles []struct {
+					Path *string `json:"path"`
+				} `json:"subtitles"`
+			} `json:"data"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&answer)
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("GET %s: %w", call, err)
+		}
+		for _, v := range answer.Data {
+			video := ShownVideo{Path: v.Path}
+			for _, s := range v.Subtitles {
+				video.Subtitles = append(video.Subtitles, s.Path)
+			}
+			videos = append(videos, video)
+		}
+	}
+	return videos, nil
 }

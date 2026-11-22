@@ -2,9 +2,6 @@ package bazarr_test
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"slices"
 	"testing"
 
@@ -50,48 +47,18 @@ func TestTestbed(t *testing.T) {
 	}
 }
 
-// noRedirects follows no redirect, which would carry the key elsewhere.
-var noRedirects = &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-
-// embeddedInAnswer reads Bazarr's movies and episodes directly and returns
-// the paths of the videos that have a subtitle entry whose path is null.
+// embeddedInAnswer returns the paths of the videos that have a subtitle
+// entry whose path is null in Bazarr's own answer.
 func embeddedInAnswer(t *testing.T, m bed.Manifest) []string {
 	t.Helper()
-	calls := []string{"movies"}
-	for _, s := range m.Series {
-		calls = append(calls, fmt.Sprintf("episodes?seriesid[]=%d", s.ID))
+	videos, err := m.Shown()
+	if err != nil {
+		t.Fatal(err)
 	}
 	var paths []string
-	for _, call := range calls {
-		req, err := http.NewRequest("GET", m.URL+"/api/"+call, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("X-API-KEY", m.APIKey)
-		resp, err := noRedirects.Do(req)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var answer struct {
-			Data []struct {
-				Path      string `json:"path"`
-				Subtitles []struct {
-					Path *string `json:"path"`
-				} `json:"subtitles"`
-			} `json:"data"`
-		}
-		err = json.NewDecoder(resp.Body).Decode(&answer)
-		resp.Body.Close()
-		if err != nil {
-			t.Fatalf("GET %s: %v", call, err)
-		}
-		for _, v := range answer.Data {
-			for _, sub := range v.Subtitles {
-				if sub.Path == nil {
-					paths = append(paths, v.Path)
-					break
-				}
-			}
+	for _, v := range videos {
+		if slices.Contains(v.Subtitles, nil) {
+			paths = append(paths, v.Path)
 		}
 	}
 	return paths
