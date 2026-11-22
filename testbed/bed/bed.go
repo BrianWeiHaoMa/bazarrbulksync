@@ -4,10 +4,14 @@
 package bed
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
+	"os/exec"
 	"slices"
 	"sort"
 
@@ -35,6 +39,20 @@ type Manifest struct {
 	// Embedded names the videos the bed gave an embedded subtitle track, by
 	// their video file's path.
 	Embedded []string
+	// Container is the Bazarr container, which sees the media volume as
+	// Bazarr does; ReadFile reads through it.
+	Container string
+	// Placed holds the SHA-256, in hexadecimal, of each placed subtitle
+	// file's bytes as the bring-up left them, by path.
+	Placed map[string]string
+	// Planted is the text placed in subtitle files for the checks of fix.
+	Planted []Planted
+}
+
+// Planted is text the bed placed in a subtitle file for a fix of F10: the
+// file holds Before, and the fix leaves After where Before was.
+type Planted struct {
+	Path, Fix, Before, After string
 }
 
 // Video is a movie or a series as Radarr or Sonarr added it.
@@ -57,17 +75,44 @@ func Load() (m Manifest, ok bool, err error) {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return Manifest{}, true, fmt.Errorf("%s: %s is not a test bed file: %w", EnvVar, path, err)
 	}
+	if m.Container == "" || len(m.Subtitles) == 0 || len(m.Placed) != len(m.Subtitles) {
+		return Manifest{}, true, fmt.Errorf("%s: %s was written by an older bring-up; run `go run ./testbed up`", EnvVar, path)
+	}
 	return m, true, nil
 }
 
 // Write writes the manifest to path, readable by its owner only, since it
-// holds the API key.
+// holds the API key. A temporary file renamed into place keeps an
+// interrupted write from leaving half a manifest.
 func (m Manifest) Write(path string) error {
 	data, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '\n'), 0o600)
+	if err := os.WriteFile(path+".tmp", append(data, '\n'), 0o600); err != nil {
+		return err
+	}
+	// WriteFile keeps the mode of a file already there.
+	if err := os.Chmod(path+".tmp", 0o600); err != nil {
+		return err
+	}
+	return os.Rename(path+".tmp", path)
+}
+
+// ReadFile returns the bytes of a file on the media volume as Bazarr sees
+// it, or an error wrapping fs.ErrNotExist when there is none.
+func (m Manifest) ReadFile(path string) ([]byte, error) {
+	cmd := exec.Command("docker", "exec", m.Container, "sh", "-c", `test -f "$1" || exit 3; cat -- "$1"`, "sh", path)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	data, err := cmd.Output()
+	if exitErr := (*exec.ExitError)(nil); errors.As(err, &exitErr) && exitErr.ExitCode() == 3 {
+		return nil, fmt.Errorf("%s: %w", path, fs.ErrNotExist)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("reading %s in %s: %v: %s", path, m.Container, err, stderr.Bytes())
+	}
+	return data, nil
 }
 
 // Compare returns the placed subtitles the library lacks and the library's

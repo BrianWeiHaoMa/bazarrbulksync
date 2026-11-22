@@ -3,6 +3,7 @@ package main
 import (
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -96,5 +97,62 @@ func TestLibraryPlan(t *testing.T) {
 	}
 	if !slices.ContainsFunc(movies, func(m movie) bool { return len(m.video.subs) == 0 }) {
 		t.Errorf("every movie has an external subtitle; want one without")
+	}
+}
+
+// The text planted for the checks of fix: something for each fix of F10, a
+// style tag in every file of the series and in a file of another title,
+// hearing-impaired cues in the lone hearing-impaired file, and edits of cue
+// text only, each placing what its fix must change.
+func TestPlantedText(t *testing.T) {
+	planted := map[string]int{}
+	for _, v := range videos() {
+		for _, s := range v.subs {
+			for _, e := range s.edits {
+				planted[e.fix]++
+				for _, text := range []string{e.line, e.text, e.before, e.after} {
+					if strings.TrimSpace(text) == "" || strings.ContainsAny(text, "\r\n") || strings.Contains(text, "-->") {
+						t.Errorf("%s: %q is not one line of cue text", subtitlePath(v, s), text)
+					}
+				}
+				if _, err := strconv.Atoi(e.line); err == nil {
+					t.Errorf("%s: an edit of the cue number %q", subtitlePath(v, s), e.line)
+				}
+				placed := e.text
+				if s.upper {
+					placed = strings.ToUpper(placed)
+				}
+				if !strings.Contains(placed, e.before) || e.before == e.after {
+					t.Errorf("%s: %q does not place %q for %s to change", subtitlePath(v, s), placed, e.before, e.fix)
+				}
+			}
+		}
+	}
+	for _, fix := range []string{"remove-hi", "remove-tags", "ocr-fixes", "common-fixes", "fix-uppercase", "remove-emoji"} {
+		if planted[fix] == 0 {
+			t.Errorf("nothing planted for %s", fix)
+		}
+	}
+	tagged := func(s subtitleFile) bool {
+		return slices.ContainsFunc(s.edits, func(e edit) bool { return e.fix == "remove-tags" })
+	}
+	for _, e := range theSeries.episodes {
+		for _, s := range e.video.subs {
+			if !tagged(s) {
+				t.Errorf("%s holds no style tag", subtitlePath(e.video, s))
+			}
+		}
+	}
+	var taggedMovie, hiAlone bool
+	for _, m := range movies {
+		for _, s := range m.video.subs {
+			taggedMovie = taggedMovie || tagged(s)
+			if s.hi && !slices.ContainsFunc(m.video.subs, func(o subtitleFile) bool { return o.language == s.language && o.suffix != s.suffix }) {
+				hiAlone = slices.ContainsFunc(s.edits, func(e edit) bool { return e.fix == "remove-hi" })
+			}
+		}
+	}
+	if !taggedMovie || !hiAlone {
+		t.Errorf("a style tag outside the series %v, hearing-impaired cues in the lone HI file %v; want both", taggedMovie, hiAlone)
 	}
 }

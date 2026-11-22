@@ -60,6 +60,20 @@ type subtitleFile struct {
 	language string // Bazarr's code2
 	hi       bool
 	forced   bool
+	// Text the checks of fix need, planted in the download's cues; the cue
+	// numbers and times stay the download's, so Bazarr's sync still fits.
+	edits []edit
+	upper bool // every cue text line upper-cased, for fix-uppercase
+}
+
+// An edit replaces the first cue text line of the download that reads line
+// with text. It is planted for the named fix (F10), which must turn before
+// into after; Bazarr's plain rewrite of a file, which follows every fix and
+// even an action it does not know, leaves before as it is.
+type edit struct {
+	line, text    string
+	fix           string
+	before, after string
 }
 
 // A video file of the library.
@@ -102,9 +116,16 @@ var movies = []movie{
 	{45745, moviesRoot + "/Sintel (2010)", video{
 		path: moviesRoot + "/Sintel (2010)/Sintel (2010).mkv", source: "sintel.mkv",
 		subs: []subtitleFile{
-			{suffix: ".en.srt", source: "sintel_en.srt", language: "en"},
-			{suffix: ".es.srt", source: "sintel_es.srt", language: "es"},
-			{suffix: ".de.srt", source: "sintel_de.srt", language: "de"},
+			{suffix: ".en.srt", source: "sintel_en.srt", language: "en", edits: []edit{
+				// "afier" is on Bazarr's English OCR list.
+				{"It has shed much innocent blood.", "It has shed much innocent blood afier all.",
+					"ocr-fixes", "blood afier all.", "blood after all."}}},
+			// A style tag in a title other than the one remove-tags is run on.
+			{suffix: ".es.srt", source: "sintel_es.srt", language: "es", edits: []edit{
+				{"Gracias.", "<i>Gracias.</i>", "remove-tags", "<i>Gracias.</i>", "Gracias."}}},
+			{suffix: ".de.srt", source: "sintel_de.srt", language: "de", edits: []edit{
+				{"Diese Klinge birgt eine finstere", ">> Diese Klinge birgt eine finstere",
+					"common-fixes", ">> Diese Klinge", "Diese Klinge birgt eine finstere"}}},
 			// Hearing-impaired, beside a non-HI subtitle of its language.
 			{suffix: ".en.hi.srt", source: "sintel_en.srt", language: "en", hi: true},
 			{suffix: ".en.forced.srt", source: "sintel_en.srt", language: "en", forced: true},
@@ -112,29 +133,45 @@ var movies = []movie{
 	{133701, moviesRoot + "/Tears of Steel (2012)", video{
 		path: moviesRoot + "/Tears of Steel (2012)/Tears of Steel (2012).mkv", source: "tos-embedded.mkv", embedded: true,
 		subs: []subtitleFile{
-			{suffix: ".en.srt", source: "TOS-en.srt", language: "en"},
+			{suffix: ".en.srt", source: "TOS-en.srt", language: "en", upper: true, edits: []edit{
+				// Kept as it is, then upper-cased with the rest of the file.
+				{"You're a jerk, Thom.", "You're a jerk, Thom.", "fix-uppercase", "YOU'RE A JERK, THOM.", "You're a jerk, thom."}}},
 			{suffix: ".es.srt", source: "TOS-es.srt", language: "es"},
-			{suffix: ".fr.srt", source: "TOS-fr-orig.srt", language: "fr"},
+			{suffix: ".fr.srt", source: "TOS-fr-orig.srt", language: "fr", edits: []edit{
+				{"Celia, on doit poursuivre nos passions;", "Celia, on doit poursuivre nos passions; 🚀",
+					"remove-emoji", "🚀", "Celia, on doit poursuivre nos passions;"}}},
 			// Hearing-impaired, with no non-HI subtitle of its language.
-			{suffix: ".it.hi.srt", source: "TOS-it.srt", language: "it", hi: true},
+			{suffix: ".it.hi.srt", source: "TOS-it.srt", language: "it", hi: true, edits: []edit{
+				{"Sei un idiota, Thom.", "CELIA: Sei un idiota, Thom.", "remove-hi", "CELIA: Sei", "Sei un idiota, Thom."},
+				{"Senti Celia, dobbiamo seguire le nostre passioni;", "[sospira] Senti Celia, dobbiamo seguire le nostre passioni;",
+					"remove-hi", "[sospira]", "Senti Celia, dobbiamo seguire le nostre passioni;"}}},
 		}}},
 }
 
+// Every file of the series holds a style tag, for remove-tags run on its
+// title. Only italic and underline: Bazarr's plain rewrite drops bold and
+// font tags by itself, so their absence after a fix would show nothing.
 var theSeries = series{75932, tvRoot + "/Fawlty Towers", []episode{
 	{1, 1, video{path: tvRoot + "/Fawlty Towers/Season 01/Fawlty Towers - S01E01.mkv", source: "sintel.mkv",
 		subs: []subtitleFile{
-			{suffix: ".en.srt", source: "sintel_en.srt", language: "en"},
-			{suffix: ".fr.srt", source: "sintel_fr.srt", language: "fr"},
+			{suffix: ".en.srt", source: "sintel_en.srt", language: "en", edits: []edit{
+				{"Thank you.", "<i>Thank you.</i>", "remove-tags", "<i>Thank you.</i>", "Thank you."}}},
+			{suffix: ".fr.srt", source: "sintel_fr.srt", language: "fr", edits: []edit{
+				{"Merci.", "<u>Merci.</u>", "remove-tags", "<u>Merci.</u>", "Merci."}}},
 		}}},
 	{1, 2, video{path: tvRoot + "/Fawlty Towers/Season 01/Fawlty Towers - S01E02.mkv", source: "tos.mkv",
 		subs: []subtitleFile{
-			{suffix: ".en.srt", source: "TOS-en.srt", language: "en"},
-			{suffix: ".es.srt", source: "TOS-es.srt", language: "es"},
+			{suffix: ".en.srt", source: "TOS-en.srt", language: "en", edits: []edit{
+				{"You're a jerk, Thom.", "<i>You're a jerk</i>, Thom.", "remove-tags", "<i>You're a jerk</i>, Thom.", "You're a jerk, Thom."}}},
+			{suffix: ".es.srt", source: "TOS-es.srt", language: "es", edits: []edit{
+				{"Eres un imbécil, Thom.", "<i>Eres un imbécil, Thom.</i>", "remove-tags", "<i>Eres un imbécil, Thom.</i>", "Eres un imbécil, Thom."}}},
 		}}},
 	{2, 1, video{path: tvRoot + "/Fawlty Towers/Season 02/Fawlty Towers - S02E01.mkv", source: "tos.mkv",
 		subs: []subtitleFile{
-			{suffix: ".en.srt", source: "TOS-en.srt", language: "en"},
-			{suffix: ".de.srt", source: "TOS-de.srt", language: "de"},
+			{suffix: ".en.srt", source: "TOS-en.srt", language: "en", edits: []edit{
+				{"You're a jerk, Thom.", "<u>You're a jerk, Thom.</u>", "remove-tags", "<u>You're a jerk, Thom.</u>", "You're a jerk, Thom."}}},
+			{suffix: ".de.srt", source: "TOS-de.srt", language: "de", edits: []edit{
+				{"Du bist ein Vollidiot, Thom.", "<i>Du bist ein Vollidiot, Thom.</i>", "remove-tags", "<i>Du bist ein Vollidiot, Thom.</i>", "Du bist ein Vollidiot, Thom."}}},
 		}}},
 }}
 
@@ -177,12 +214,49 @@ func prepareScript() string {
 	for _, v := range videos() {
 		fmt.Fprintf(&b, "mkdir -p %s\ncp /downloads/%s %s\n", quote(dir(v.path)), quote(v.source), quote(v.path))
 		for _, s := range v.subs {
-			fmt.Fprintf(&b, "cp /downloads/%s %s\n", quote(s.source), quote(subtitlePath(v, s)))
+			placeSubtitle(&b, v, s)
 		}
 	}
 	b.WriteString("chown -R abc:abc /media\n")
 	return b.String()
 }
+
+// placeSubtitle writes the commands that copy s's download beside v and
+// plant its text. The bring-up fails when an edit finds no line to replace,
+// or when the placed file's line count, cue numbers, or cue times differ
+// from the download's: planting changes cue text only.
+func placeSubtitle(b *strings.Builder, v video, s subtitleFile) {
+	src, dst := quote("/downloads/"+s.source), quote(subtitlePath(v, s))
+	fmt.Fprintf(b, "cp %s %s\n", src, dst)
+	if len(s.edits) == 0 && !s.upper {
+		return
+	}
+	for _, e := range s.edits {
+		fmt.Fprintf(b, "LINE=%s TEXT=%s awk %s %s > /tmp/planted || exit 1; cat /tmp/planted > %s\n",
+			quote(e.line), quote(e.text), quote(editProgram), dst, dst)
+	}
+	if s.upper {
+		fmt.Fprintf(b, "awk %s %s > /tmp/planted || exit 1; cat /tmp/planted > %s\n", quote(upperProgram), dst, dst)
+	}
+	// Cue numbers and times: a line holding -->, or digits alone before an
+	// optional carriage return.
+	fmt.Fprintf(b, "grep -E -e '-->' -e '^[0-9]+.?$' %s > /tmp/times.src; grep -E -e '-->' -e '^[0-9]+.?$' %s > /tmp/times.dst\n", src, dst)
+	fmt.Fprintf(b, "[ \"$(wc -l < %s)\" = \"$(wc -l < %s)\" ] && cmp -s /tmp/times.src /tmp/times.dst || { echo %s >&2; exit 1; }\n",
+		src, dst, quote("planting text changed the cues of "+subtitlePath(v, s)))
+}
+
+// editProgram is the awk program of an edit: it replaces the first line
+// reading $LINE, its carriage return aside, with $TEXT, and fails when no
+// line does.
+const editProgram = `{ l = $0; cr = ""; if (sub(/\r$/, "", l)) cr = "\r" }
+!done && l == ENVIRON["LINE"] { print ENVIRON["TEXT"] cr; done = 1; next }
+{ print }
+END { if (!done) { print "no line reads: " ENVIRON["LINE"] > "/dev/stderr"; exit 1 } }`
+
+// upperProgram upper-cases every line that is neither a cue number nor a
+// cue's times.
+const upperProgram = `{ l = $0; cr = ""; if (sub(/\r$/, "", l)) cr = "\r"
+if (l !~ /-->/ && l !~ /^[0-9]*$/) l = toupper(l); print l cr }`
 
 func dir(path string) string { return path[:strings.LastIndex(path, "/")] }
 

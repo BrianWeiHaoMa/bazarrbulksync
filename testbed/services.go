@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,7 +42,8 @@ func provision(ctx context.Context, keys map[string]string) (bed.Manifest, error
 			return bed.Manifest{}, err
 		}
 	}
-	m := bed.Manifest{URL: bazarrService.url(), APIKey: keys["bazarr"], BazarrImage: bazarrImage}
+	m := bed.Manifest{URL: bazarrService.url(), APIKey: keys["bazarr"], BazarrImage: bazarrImage,
+		Container: bazarrService.container(), Placed: map[string]string{}}
 	if err := addMovies(ctx, radarr, &m); err != nil {
 		return bed.Manifest{}, err
 	}
@@ -49,6 +52,14 @@ func provision(ctx context.Context, keys map[string]string) (bed.Manifest, error
 	}
 	if err := indexInBazarr(ctx, m); err != nil {
 		return bed.Manifest{}, err
+	}
+	for _, s := range m.Subtitles {
+		data, err := m.ReadFile(s.Path)
+		if err != nil {
+			return bed.Manifest{}, err
+		}
+		sum := sha256.Sum256(data)
+		m.Placed[s.Path] = hex.EncodeToString(sum[:])
 	}
 	return m, nil
 }
@@ -172,6 +183,9 @@ func addVideo(m *bed.Manifest, v video, of bazarr.Subtitle) {
 		sub := of
 		sub.Language, sub.HI, sub.Forced, sub.Path = s.language, s.hi, s.forced, subtitlePath(v, s)
 		m.Subtitles = append(m.Subtitles, sub)
+		for _, e := range s.edits {
+			m.Planted = append(m.Planted, bed.Planted{Path: sub.Path, Fix: e.fix, Before: e.before, After: e.after})
+		}
 	}
 	if v.embedded {
 		m.Embedded = append(m.Embedded, v.path)
