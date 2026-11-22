@@ -146,16 +146,22 @@ type object struct {
 	fields    []string
 }
 
-// listJSON runs `list --json` with args and decodes each line, keeping the
-// field names it held.
+// listJSON runs `list --json` with args and decodes what it printed.
 func listJSON(t *testing.T, m bed.Manifest, args ...string) []object {
 	t.Helper()
 	r := runExecutable(t, m.URL, m.APIKey, append([]string{"list", "--json"}, args...)...)
 	if r.code != 0 || r.stderr != "" {
 		t.Fatalf("list --json %v: code %d, stderr %q", args, r.code, r.stderr)
 	}
+	return decodeObjects(t, r.stdout)
+}
+
+// decodeObjects decodes each line `list --json` printed, keeping the field
+// names it held.
+func decodeObjects(t *testing.T, stdout string) []object {
+	t.Helper()
 	var objs []object
-	for _, l := range strings.Split(strings.TrimSuffix(r.stdout, "\n"), "\n") {
+	for _, l := range strings.Split(strings.TrimSuffix(stdout, "\n"), "\n") {
 		var obj object
 		var raw map[string]json.RawMessage
 		if err := json.Unmarshal([]byte(l), &obj); err != nil {
@@ -166,6 +172,11 @@ func listJSON(t *testing.T, m bed.Manifest, args ...string) []object {
 		}
 		for k := range raw {
 			obj.fields = append(obj.fields, k)
+		}
+		for _, k := range []string{"hi", "forced"} {
+			if v := string(raw[k]); v != "true" && v != "false" {
+				t.Errorf("line %q: %s is %s, want true or false (F7)", l, k, v)
+			}
 		}
 		slices.Sort(obj.fields)
 		objs = append(objs, obj)
@@ -287,7 +298,7 @@ func pathsInAnswer(t *testing.T, m bed.Manifest) []string {
 // changingSets are the switches, each beside bed.EnvVar, of the sets of
 // checks that change the bed. Each set needs a fresh bed, so no two run in
 // one invocation; a new set adds its switch here.
-var changingSets = []string{changesVar, syncVar, pathsVar, outagesVar}
+var changingSets = []string{changesVar, syncVar, pathsVar, outagesVar, imageVar}
 
 // changingBed loads the bed for the changing set whose switch is mine. It
 // skips without the bed or without that switch, and fails while another

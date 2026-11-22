@@ -1,0 +1,2 @@
+# What `go run ./release <version>` writes. Never committed.
+/out/
