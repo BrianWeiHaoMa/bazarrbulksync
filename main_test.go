@@ -86,7 +86,7 @@ func waitExit(t *testing.T, cmd *exec.Cmd) {
 
 func TestExecutableUsage(t *testing.T) {
 	srv := fakebazarr.New(t, fakebazarr.Config{})
-	for _, args := range [][]string{{"list", "--movies", "--series"}, {"sync"}, {}} {
+	for _, args := range [][]string{{"list", "--movies", "--series"}, {"synch"}, {}} {
 		r := runExecutable(t, srv.URL, srv.APIKey(), args...)
 		if r.code == 0 || r.stdout != "" || !strings.Contains(r.stderr, "--help") {
 			t.Errorf("%q: code %d, stdout %q, stderr %q; want a usage error on standard error, nonzero (G1)", args, r.code, r.stdout, r.stderr)

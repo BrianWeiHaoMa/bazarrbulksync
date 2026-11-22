@@ -225,7 +225,7 @@ func TestUsageContactsNothing(t *testing.T) {
 	srv := fakebazarr.New(t, fakebazarr.Config{})
 	for _, args := range [][]string{
 		{"list", "--movies", "--series"}, {"list", "--hi", "--no-hi"}, {"list", "--forced", "--no-forced"},
-		{}, {"sync"}, {"list", "--bogus"}, {"list", "--season", "x"},
+		{}, {"synch"}, {"list", "--bogus"}, {"list", "--season", "x"},
 	} {
 		o := runAgainst(t, srv, args...)
 		failed(t, strings.Join(args, " "), o)

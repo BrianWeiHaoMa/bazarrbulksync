@@ -59,7 +59,15 @@ func selectOK(t *testing.T, c selection.Criteria) []bazarr.Subtitle {
 	if err != nil {
 		t.Fatalf("Select(%+v): %v", c, err)
 	}
-	return got
+	return subtitlesOf(got)
+}
+
+func subtitlesOf(sel []selection.Selected) []bazarr.Subtitle {
+	subs := make([]bazarr.Subtitle, len(sel))
+	for i, s := range sel {
+		subs[i] = s.Subtitle
+	}
+	return subs
 }
 
 func paths(subs []bazarr.Subtitle) []string {
@@ -127,7 +135,7 @@ func TestTitle(t *testing.T) {
 	greek := movieSub(8, "ΟΔΥΣΣΕΎΣ", "el", "/movies/Odysseus/Odysseus.el.srt", false, false)
 	greekLib := bazarr.Library{Movies: []bazarr.Movie{{ID: 8, Title: "ΟΔΥΣΣΕΎΣ", Subtitles: []bazarr.Subtitle{greek}}}}
 	if got, err := selection.Select(selection.Criteria{Titles: []string{"Οδυσσεύς"}}, greekLib); err != nil || len(got) != 1 {
-		t.Errorf("a final sigma against a capital one: selected %q, err %v; want the movie", paths(got), err)
+		t.Errorf("a final sigma against a capital one: selected %q, err %v; want the movie", paths(subtitlesOf(got)), err)
 	}
 	lib := bazarr.Library{Series: []bazarr.Series{{ID: 1, Title: "Show", Episodes: []bazarr.Episode{
 		{ID: 11, Season: 1, Number: 1, Subtitles: []bazarr.Subtitle{episodeSub(1, 11, "Show", 1, 1, "en", "/a.srt", false, false)}},
@@ -162,7 +170,7 @@ func TestNotFound(t *testing.T) {
 		got, err := selection.Select(tc.c, library)
 		var nf *selection.NotFoundError
 		if !errors.As(err, &nf) {
-			t.Errorf("%s: selected %q, err %v; want a NotFoundError", tc.name, paths(got), err)
+			t.Errorf("%s: selected %q, err %v; want a NotFoundError", tc.name, paths(subtitlesOf(got)), err)
 			continue
 		}
 		if !reflect.DeepEqual(*nf, tc.want) {
@@ -216,10 +224,32 @@ func TestOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []bazarr.Subtitle{m1a, m1b, m2, s2e2a, s2e2b, s2e2c, s2e10, s10e2, other}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("order\n  %q\nwant\n  %q", paths(got), paths(want))
+	if !reflect.DeepEqual(subtitlesOf(got), want) {
+		t.Errorf("order\n  %q\nwant\n  %q", paths(subtitlesOf(got)), paths(want))
 	}
 	if lib.Series[0].Episodes[0].Season != 10 {
 		t.Errorf("Select reordered the caller's library")
+	}
+}
+
+// TestOthers: each selected subtitle comes with the other videos of the
+// whole library showing a subtitle at its path, selected or not, and never
+// its own video.
+func TestOthers(t *testing.T) {
+	double := "/tv/Long/S01E10-S02E01.en.srt" // one file Bazarr shows for two episodes
+	lib := bazarr.Library{Series: []bazarr.Series{{ID: 5, Title: "Long", Episodes: []bazarr.Episode{
+		{ID: 510, Season: 1, Number: 10, Subtitles: []bazarr.Subtitle{episodeSub(5, 510, "Long", 1, 10, "en", double, false, false)}},
+		{ID: 521, Season: 2, Number: 1, Subtitles: []bazarr.Subtitle{
+			episodeSub(5, 521, "Long", 2, 1, "en", double, false, false),
+			episodeSub(5, 521, "Long", 2, 1, "de", "/tv/Long/S02E01.de.srt", false, false),
+		}},
+	}}}}
+	got, err := selection.Select(selection.Criteria{Seasons: []int{2}}, lib)
+	if err != nil || len(got) != 2 {
+		t.Fatalf("selected %+v, %v", got, err)
+	}
+	want := []bazarr.Video{{Type: bazarr.TypeEpisode, ID: 510}}
+	if got[0].Path != double || !reflect.DeepEqual(got[0].Others, want) || len(got[1].Others) != 0 {
+		t.Errorf("others %+v and %+v; want the unselected episode for the shared path only", got[0], got[1])
 	}
 }

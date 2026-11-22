@@ -235,3 +235,12 @@ func cloneLibrary(lib Library) Library {
 	}
 	return out
 }
+
+// SetLibrary replaces the library the fake shows from the next request on,
+// as Bazarr's library changes while a run reads it (a subtitle downloaded,
+// replaced, or deleted by someone else).
+func (s *Server) SetLibrary(lib Library) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cfg.Library = cloneLibrary(lib)
+}

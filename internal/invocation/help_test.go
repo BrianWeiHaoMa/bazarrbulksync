@@ -12,12 +12,12 @@ func TestHelp(t *testing.T) {
 	if program.Request != nil || !strings.Contains(program.Text, "list") || !strings.HasSuffix(program.Text, "\n") {
 		t.Errorf("program help: %+v", program)
 	}
-	for _, cmd := range []string{"delete", "fix"} {
+	for _, cmd := range []string{"sync", "delete", "fix"} {
 		if !strings.Contains(program.Text, "  "+cmd+" ") {
 			t.Errorf("program help does not list %s (F5):\n%s", cmd, program.Text)
 		}
 	}
-	for _, other := range []string{"sync"} {
+	for _, other := range []string{"upload"} {
 		if strings.Contains(program.Text, "  "+other+" ") {
 			t.Errorf("program help offers %s, which this program does not have:\n%s", other, program.Text)
 		}

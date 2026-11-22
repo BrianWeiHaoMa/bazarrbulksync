@@ -11,8 +11,15 @@ import (
 )
 
 // changeCommand is what a command that changes Bazarr gives the run it
-// shares with the others: its words, its request, and its skip rule.
+// shares with the others: its words, its request, and its skip rule; or,
+// for a command whose step for a subtitle is not one request with one
+// answer, its own run.
 type changeCommand struct {
+	// run, when set, replaces the loop over single requests: once the run
+	// may start, it gets the whole selection in order and returns how its
+	// run ended, as changes does; done, wouldDo, send, and skip are then
+	// unused. The shared run still prints the totals.
+	run func(ctx context.Context, c *bazarr.Client, subs []selection.Selected) error
 	// done is the outcome of an accepted request, wouldDo its word under
 	// --dry-run (P3).
 	done, wouldDo reporter.Outcome
@@ -91,12 +98,23 @@ func changes(ctx context.Context, conn bazarr.Connection, req *invocation.Reques
 		}
 	}
 	rep.Selected(len(subs))
+	if cmd.run != nil {
+		return cmd.run(ctx, client, subs)
+	}
+	return sendEach(ctx, client, lib, subs, dryRun, rep, cmd)
+}
+
+// sendEach acts on each subtitle with one request, or under --dry-run
+// reports what it would do, reporting each outcome as it is known.
+func sendEach(ctx context.Context, client *bazarr.Client, lib bazarr.Library, subs []selection.Selected,
+	dryRun bool, rep *reporter.Reporter, cmd changeCommand) error {
 	var skip func(bazarr.Subtitle) reporter.SkipReason
 	if cmd.skip != nil {
 		skip = cmd.skip(lib)
 	}
 	notDone := false
-	for _, sub := range subs {
+	for _, sel := range subs {
+		sub := sel.Subtitle
 		// A stop is noticed between subtitles too, with no request in flight (G4).
 		if ctx.Err() != nil {
 			return bazarr.ErrStopped

@@ -34,7 +34,7 @@ func programHelp() string {
 	return b.String()
 }
 
-func commandHelp(cmd command) string {
+func commandHelp(cmd command, getenv func(string) string) string {
 	var b strings.Builder
 	usage := string(cmd.name)
 	if cmd.word != nil {
@@ -57,6 +57,9 @@ func commandHelp(cmd command) string {
 		"  --title, --movie-id, and --series-id are one kind, which any one value satisfies.\n")
 	writeOptions(&b, "Connection:", connectionOptions)
 	b.WriteString("\n  --help                 show this help\n")
+	if cmd.notes != nil {
+		b.WriteString("\n" + cmd.notes(getenv))
+	}
 	return b.String()
 }
 

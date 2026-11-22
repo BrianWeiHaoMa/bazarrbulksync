@@ -62,16 +62,25 @@ func (e *NotFoundError) Error() string {
 	return strings.Join(parts, "; ")
 }
 
+// Selected is a selected subtitle, with the other videos the library shows
+// with a subtitle at its path, such as the other episodes of a
+// multi-episode file, whose histories hold its events too.
+type Selected struct {
+	bazarr.Subtitle
+	Others []bazarr.Video
+}
+
 // Select returns every subtitle of lib that c selects, in the order of P2:
 // movies before episodes; movies and series in the library's order; a
 // series' episodes by season, then episode number; one video's subtitles by
-// path in byte order. When a title or ID of c matches nothing in lib, it
-// returns a *NotFoundError instead.
-func Select(c Criteria, lib bazarr.Library) ([]bazarr.Subtitle, error) {
+// path in byte order. Each comes with the other videos of the whole library,
+// selected or not, that show a subtitle at its path. When a title or ID of
+// c matches nothing in lib, it returns a *NotFoundError instead.
+func Select(c Criteria, lib bazarr.Library) ([]Selected, error) {
 	if err := notFound(c, lib); err != nil {
 		return nil, err
 	}
-	var selected []bazarr.Subtitle
+	var selected []Selected
 	for _, m := range lib.Movies {
 		selected = appendSelected(selected, c, m.Subtitles)
 	}
@@ -85,19 +94,33 @@ func Select(c Criteria, lib bazarr.Library) ([]bazarr.Subtitle, error) {
 			selected = appendSelected(selected, c, e.Subtitles)
 		}
 	}
+	videosAt := map[string][]bazarr.Video{}
+	for _, sub := range lib.Subtitles() {
+		if v := sub.Video(); !slices.Contains(videosAt[sub.Path], v) {
+			videosAt[sub.Path] = append(videosAt[sub.Path], v)
+		}
+	}
+	for i := range selected {
+		own := selected[i].Video()
+		for _, v := range videosAt[selected[i].Path] {
+			if v != own {
+				selected[i].Others = append(selected[i].Others, v)
+			}
+		}
+	}
 	return selected, nil
 }
 
 // appendSelected appends the subtitles of one video that c selects, by path
 // in byte order.
-func appendSelected(selected []bazarr.Subtitle, c Criteria, subs []bazarr.Subtitle) []bazarr.Subtitle {
+func appendSelected(selected []Selected, c Criteria, subs []bazarr.Subtitle) []Selected {
 	start := len(selected)
 	for _, sub := range subs {
 		if c.selects(sub) {
-			selected = append(selected, sub)
+			selected = append(selected, Selected{Subtitle: sub})
 		}
 	}
-	slices.SortStableFunc(selected[start:], func(a, b bazarr.Subtitle) int { return strings.Compare(a.Path, b.Path) })
+	slices.SortStableFunc(selected[start:], func(a, b Selected) int { return strings.Compare(a.Path, b.Path) })
 	return selected
 }
 

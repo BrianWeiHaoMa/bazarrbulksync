@@ -34,6 +34,9 @@ type command struct {
 	// needsSelection makes a command line without a selection option a
 	// usage error (G26).
 	needsSelection bool
+	// notes, when set, ends the command's help with text read from the
+	// environment, such as the default state file's path.
+	notes func(getenv func(string) string) string
 }
 
 // word is a command's one positional word: exactly one of its values must

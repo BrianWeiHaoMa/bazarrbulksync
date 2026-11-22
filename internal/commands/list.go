@@ -27,19 +27,21 @@ func list(ctx context.Context, conn bazarr.Connection, req *invocation.Request, 
 	if len(subs) == 0 {
 		return errEmptySelection
 	}
+	listed := make([]bazarr.Subtitle, 0, len(subs))
 	for _, s := range subs {
+		listed = append(listed, s.Subtitle)
 		// A stop while printing a long list ends it there (G4).
 		if ctx.Err() != nil {
 			return bazarr.ErrStopped
 		}
 		if req.List.JSON {
-			rep.SubtitleJSON(s)
+			rep.SubtitleJSON(s.Subtitle)
 		} else {
-			rep.Subtitle(s)
+			rep.Subtitle(s.Subtitle)
 		}
 	}
 	if !req.List.JSON {
-		rep.ListTotals(subs)
+		rep.ListTotals(listed)
 	}
 	return nil
 }

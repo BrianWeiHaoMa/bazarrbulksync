@@ -18,7 +18,7 @@ type Command string
 
 // commands is every command the program accepts, in the order its help
 // lists them. A new command is one file beside list.go and one entry here.
-var commands = []command{listCommand, fixCommand, deleteCommand}
+var commands = []command{listCommand, syncCommand, fixCommand, deleteCommand}
 
 // Request is a validated command line. The connection and the selection are
 // shared by every command; each command's own options sit in its field.
@@ -31,6 +31,7 @@ type Request struct {
 	Selection  selection.Criteria
 	List       ListOptions
 	Change     ChangeOptions
+	Sync       SyncOptions
 	// Fix is the fix `fix` applies (F10).
 	Fix bazarr.Fix
 }
@@ -205,7 +206,7 @@ func (p parser) parseCommand(cmd command, args []string, getenv func(string) str
 		}
 	}
 	if help {
-		return Result{Text: commandHelp(cmd)}, nil
+		return Result{Text: commandHelp(cmd, getenv)}, nil
 	}
 	if w := cmd.word; w != nil && !gotWord {
 		return Result{}, p.usage(cmd.name, "%s needs %s, one of %s", cmd.name, w.arg, w.list())
@@ -218,6 +219,9 @@ func (p parser) parseCommand(cmd command, args []string, getenv func(string) str
 	}
 	if !given[optAPIKey] {
 		req.Connection.APIKey = getenv(envAPIKey)
+	}
+	if cmd.name == CommandSync {
+		finishSync(req, getenv)
 	}
 	return Result{Request: req}, nil
 }

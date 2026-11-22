@@ -26,8 +26,24 @@ const (
 	WouldApply Outcome = "would apply"
 )
 
+// WouldSync is `sync --dry-run`'s outcome of a subtitle a run would submit (G13).
+const WouldSync Outcome = "would sync"
+
 // SkipReason is why a run skips a subtitle (P3).
 type SkipReason string
+
+// The skip reasons of `sync`, in P3's order, which is the order a sync's
+// judging tries them in (G15, G18).
+const (
+	// SyncInBazarr: Bazarr's queue shows a sync of the subtitle; under
+	// --dry-run only, since a real run waits for it.
+	SyncInBazarr      SkipReason = "sync in Bazarr"
+	Forced            SkipReason = "forced"
+	CurrentlySynced   SkipReason = "currently synced"
+	EarlierFailure    SkipReason = "earlier failure"
+	ReferenceLanguage SkipReason = "reference language"
+	NoReference       SkipReason = "no reference subtitle"
+)
 
 // ReplacesNonHI: `fix remove-hi` skips a subtitle whose fix would have
 // Bazarr replace another subtitle (G25).
