@@ -46,6 +46,10 @@ func TestBedImage(t *testing.T) {
 	if version == "" {
 		t.Fatalf("set %s to the version `go run ./release <version>` was given", releaseVar)
 	}
+	// The image runs here, and its state file is copied out to be read here.
+	if os.Getenv(sshVar) != "" {
+		t.Fatalf("the image's checks run the image in this machine's Docker: unset %s", sshVar)
+	}
 	b := newChangeBed(t, m)
 
 	for _, arch := range []string{"amd64", "arm64"} {

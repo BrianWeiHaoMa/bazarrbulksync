@@ -3,7 +3,6 @@ package main_test
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -41,7 +40,7 @@ func TestBedOutages(t *testing.T) {
 		}
 		b.needProvisioned(t, paths(six)...)
 		b.needNoSync(t, six...)
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		args := []string{"sync", "--yes", "--language", "en", "--no-forced", "--state-file", state}
 		second := startTime(t, m.OnSecond())
 
@@ -136,7 +135,7 @@ func TestBedOutages(t *testing.T) {
 		}
 		b.needProvisioned(t, paths(es)...)
 		b.needNoSync(t, es...)
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		before := startTime(t, m)
 
 		printed := map[string]time.Time{}

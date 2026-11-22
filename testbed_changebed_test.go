@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -34,6 +33,7 @@ type changeBed struct {
 	requests []*sentRequest // each request of the last run, answered or not
 	keyInURL bool           // a request of the last run carried the key in its URL
 	cut      chan struct{}  // open while the network is cut (startCut)
+	home     string         // HOME of each run, where a check sets one
 }
 
 // sentRequest is one request of a run as the proxy saw it.
@@ -83,19 +83,32 @@ func newChangeBed(t *testing.T, m bed.Manifest) *changeBed {
 	return b
 }
 
-// exec runs the executable and returns what it left and the requests it
+// exec runs the product and returns what it left and the requests it
 // sent. The key travels only in its header and is never printed (R2); a
 // run that breaks that stops the check before its output reaches the log.
 func (b *changeBed) exec(t *testing.T, args ...string) (result, []string) {
 	t.Helper()
+	return b.execTyped(t, "", args...)
+}
+
+// execTyped runs the product as exec does, with a terminal as its standard
+// input, typed into, when typed is not empty.
+func (b *changeBed) execTyped(t *testing.T, typed string, args ...string) (result, []string) {
+	t.Helper()
 	b.forget()
-	r := runExecutable(t, b.proxy, b.APIKey, args...)
+	r := runProduct(t, b.env(), typed, args)
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.keyInURL || strings.Contains(r.stdout+r.stderr, b.APIKey) {
 		t.Fatalf("%q put the API key in a URL or printed it", args)
 	}
 	return r, b.sent()
+}
+
+// env is the environment of each run: the proxy's address, the key, and
+// the home a check set.
+func (b *changeBed) env() runEnv {
+	return runEnv{url: b.proxy, key: b.APIKey, home: b.home}
 }
 
 // forget clears what the proxy recorded, before a run.
@@ -105,7 +118,7 @@ func (b *changeBed) forget() {
 	b.requests, b.keyInURL = nil, false
 }
 
-// run runs the executable and requires the exit code want.
+// run runs the product and requires the exit code want.
 func (b *changeBed) run(t *testing.T, want int, args ...string) result {
 	t.Helper()
 	r, _ := b.exec(t, args...)
@@ -386,24 +399,19 @@ func textLines(data []byte) []string {
 func (b *changeBed) live(t *testing.T, args []string, onLine func(line string, stop func())) result {
 	t.Helper()
 	b.forget()
-	cmd, _, stderr := command(b.proxy, b.APIKey, args...)
-	cmd.Stdout = nil
-	out, err := cmd.StdoutPipe()
+	run, err := onHost(t).start(b.env(), args)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("%q: %v", args, err)
 	}
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	timer := time.AfterFunc(5*time.Minute, func() { _ = cmd.Process.Kill() })
+	timer := time.AfterFunc(5*time.Minute, run.kill)
 	defer timer.Stop()
 	stop := func() {
-		if err := cmd.Process.Signal(os.Interrupt); err != nil {
+		if err := run.interrupt(); err != nil {
 			t.Errorf("interrupting the run: %v", err)
 		}
 	}
 	var stdout strings.Builder
-	lines := bufio.NewScanner(out)
+	lines := bufio.NewScanner(run.stdout)
 	for lines.Scan() {
 		stdout.WriteString(lines.Text() + "\n")
 		b.asReported(t, lines.Text())
@@ -411,10 +419,13 @@ func (b *changeBed) live(t *testing.T, args []string, onLine func(line string, s
 			onLine(lines.Text(), stop)
 		}
 	}
-	_ = cmd.Wait()
+	r, err := run.wait()
+	if err != nil {
+		t.Fatalf("%q: %v", args, err)
+	}
+	r.stdout = stdout.String() + r.stdout
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	r := result{code: cmd.ProcessState.ExitCode(), stdout: stdout.String(), stderr: stderr.String()}
 	if b.keyInURL || strings.Contains(r.stdout+r.stderr, b.APIKey) {
 		t.Fatalf("%q put the API key in a URL or printed it", args)
 	}

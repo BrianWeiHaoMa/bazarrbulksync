@@ -194,7 +194,7 @@ func TestBedChanges(t *testing.T) {
 		r = b.run(t, 0, "delete", "--language", "es", "--yes")
 		b.sends(t, len(es))
 		b.reports(t, r, "deleted", listES)
-		if r := runExecutable(t, m.URL, m.APIKey, "list", "--language", "es"); r.code != 0 || r.stdout != "" || r.stderr == "" {
+		if r := bedRun(t, m.URL, m.APIKey, "list", "--language", "es"); r.code != 0 || r.stdout != "" || r.stderr == "" {
 			t.Errorf("list --language es afterwards: code %d, stdout %q, stderr %q; want an empty selection noted, exit 0", r.code, r.stdout, r.stderr)
 		}
 		after := b.files(t)

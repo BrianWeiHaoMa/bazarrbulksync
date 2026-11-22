@@ -13,7 +13,7 @@ import (
 	"github.com/BrianWeiHaoMa/bazarrbulksync/testbed/bed"
 )
 
-// TestTestbed runs the built executable against the real Bazarr of the test
+// TestTestbed runs the product (testbed_host_test.go) against the real Bazarr of the test
 // bed (`go run ./testbed up`). It runs only when BAZARRBULKSYNC_TESTBED
 // names the bed's file, so that `go test ./...` stays offline.
 func TestTestbed(t *testing.T) {
@@ -27,7 +27,7 @@ func TestTestbed(t *testing.T) {
 	shown := pathsInAnswer(t, m)
 
 	t.Run("lines", func(t *testing.T) {
-		r := runExecutable(t, m.URL, m.APIKey, "list")
+		r := bedRun(t, m.URL, m.APIKey, "list")
 		if r.code != 0 || r.stderr != "" {
 			t.Fatalf("code %d, stderr %q", r.code, r.stderr)
 		}
@@ -122,10 +122,20 @@ func TestTestbed(t *testing.T) {
 			"wrong base path": {m.URL + "/nowhere", m.APIKey},
 			"wrong key":       {m.URL, "0123456789abcdef0123456789abcdef"},
 		} {
-			r := runExecutable(t, c.url, c.key, "list")
+			r := bedRun(t, c.url, c.key, "list")
 			if r.code == 0 || r.stdout != "" || !strings.Contains(r.stderr, c.url) {
 				t.Errorf("%s: code %d, stdout %q, stderr %q; want the address named on standard error, nonzero (G2)", name, r.code, r.stdout, r.stderr)
 			}
+		}
+	})
+
+	// A run reaches the product with each argument as given, wherever it
+	// runs (G8).
+	t.Run("title as given", func(t *testing.T) {
+		const title = `Tears of Steel's "director's cut"`
+		r := bedRun(t, m.URL, m.APIKey, "list", "--title", title)
+		if r.code == 0 || r.stdout != "" || !strings.Contains(r.stderr, strconv.Quote(title)) {
+			t.Errorf("code %d, stdout %q, stderr %q; want %s named on standard error, nonzero (G8)", r.code, r.stdout, r.stderr, strconv.Quote(title))
 		}
 	})
 }
@@ -149,7 +159,7 @@ type object struct {
 // listJSON runs `list --json` with args and decodes what it printed.
 func listJSON(t *testing.T, m bed.Manifest, args ...string) []object {
 	t.Helper()
-	r := runExecutable(t, m.URL, m.APIKey, append([]string{"list", "--json"}, args...)...)
+	r := bedRun(t, m.URL, m.APIKey, append([]string{"list", "--json"}, args...)...)
 	if r.code != 0 || r.stderr != "" {
 		t.Fatalf("list --json %v: code %d, stderr %q", args, r.code, r.stderr)
 	}
@@ -298,7 +308,7 @@ func pathsInAnswer(t *testing.T, m bed.Manifest) []string {
 // changingSets are the switches, each beside bed.EnvVar, of the sets of
 // checks that change the bed. Each set needs a fresh bed, so no two run in
 // one invocation; a new set adds its switch here.
-var changingSets = []string{changesVar, syncVar, pathsVar, outagesVar, imageVar}
+var changingSets = []string{changesVar, syncVar, pathsVar, outagesVar, imageVar, platformVar}
 
 // changingBed loads the bed for the changing set whose switch is mine. It
 // skips without the bed or without that switch, and fails while another

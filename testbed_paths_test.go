@@ -6,7 +6,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -55,7 +54,7 @@ func TestBedPaths(t *testing.T) {
 				t.Errorf("list printed %q, want %s of %s", lines, path, videoOf(shared[j]))
 			}
 		}
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		run := append([]string{"sync", "--yes", "--state-file", state}, args...)
 
 		r := b.live(t, run, nil)
@@ -91,7 +90,7 @@ func TestBedPaths(t *testing.T) {
 	})
 
 	t.Run("upload", func(t *testing.T) {
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		sub, args, line := b.recordFailure(t, state)
 		old, _ := b.record(t, state, b.proxy, sub.Path)
 		data, err := b.ReadFile(sub.Path)
@@ -133,7 +132,7 @@ func TestBedPaths(t *testing.T) {
 
 	t.Run("second server", func(t *testing.T) {
 		second := newChangeBed(t, m.OnSecond())
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		sub, args, _ := b.recordFailure(t, state)
 		second.needShown(t, sub)
 		second.needNoSync(t, sub)

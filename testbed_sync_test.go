@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -35,7 +33,7 @@ func TestBedSync(t *testing.T) {
 	t.Run("dry run", func(t *testing.T) {
 		b.needProvisioned(t, paths(m.Subtitles)...)
 		b.needNoSync(t, m.Subtitles...)
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		events, files := b.events(t, m.Subtitles...), b.files(t)
 		var want []string
 		for _, l := range b.listLines(t) {
@@ -83,7 +81,7 @@ func TestBedSync(t *testing.T) {
 			t.Fatalf("the bed placed %d non-forced English subtitles, of %d types; want six, movies and episodes among them", len(six), len(types))
 		}
 		b.needNoSync(t, six...)
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		args := []string{"sync", "--yes", "--language", "en", "--no-forced", "--state-file", state}
 		from := q.mark()
 
@@ -181,7 +179,7 @@ func TestBedSync(t *testing.T) {
 		}
 		b.needNoSync(t, es...)
 		from := q.mark()
-		r := b.live(t, []string{"sync", "--yes", "--language", "es", "--concurrency", "2", "--state-file", filepath.Join(t.TempDir(), "state.json")}, nil)
+		r := b.live(t, []string{"sync", "--yes", "--language", "es", "--concurrency", "2", "--state-file", onHost(t).stateFile(t)}, nil)
 		run := b.syncsOfLastRun()
 		if r.code != 0 || strings.Count(r.stdout, "synced  ") != 3 || len(run) != 3 {
 			t.Errorf("code %d, stdout %q, stderr %q; want each subtitle synced by one request, exit zero", r.code, r.stdout, r.stderr)
@@ -202,7 +200,7 @@ func TestBedSync(t *testing.T) {
 	})
 
 	t.Run("failed", func(t *testing.T) {
-		state := filepath.Join(t.TempDir(), "state.json")
+		state := onHost(t).stateFile(t)
 		sub, args, line := b.recordFailure(t, state)
 
 		r := b.live(t, args, nil)
@@ -241,6 +239,13 @@ func TestBedSync(t *testing.T) {
 // the subtitle, args, and the subtitle's list line.
 func (b *changeBed) recordFailure(t *testing.T, state string) (sub bazarr.Subtitle, args []string, line string) {
 	t.Helper()
+	return b.recordFailureAt(t, state, "--state-file", state)
+}
+
+// recordFailureAt makes the failure as recordFailure does, the run given
+// stateArgs, which leave its state file at state.
+func (b *changeBed) recordFailureAt(t *testing.T, state string, stateArgs ...string) (sub bazarr.Subtitle, args []string, line string) {
+	t.Helper()
 	de := b.selected(t, "--language", "de", "--movies")
 	if len(de) != 1 {
 		t.Fatalf("the bed placed %d German movie subtitles, want 1", len(de))
@@ -248,7 +253,7 @@ func (b *changeBed) recordFailure(t *testing.T, state string) (sub bazarr.Subtit
 	sub = de[0]
 	b.needNoSync(t, sub)
 	// The video has one audio track.
-	args = []string{"sync", "--yes", "--language", "de", "--movies", "--reference", "a:5", "--state-file", state}
+	args = append([]string{"sync", "--yes", "--language", "de", "--movies", "--reference", "a:5"}, stateArgs...)
 	line = b.listLine(t, sub)
 
 	r := b.live(t, args, nil)
@@ -353,8 +358,8 @@ func sameEvents(a, b map[string][]string) bool {
 	return true
 }
 
-// recorded reports whether the state file at path holds a failure of
-// subtitle under address.
+// recorded reports whether the state file at path, where the product runs,
+// holds a failure of subtitle under address.
 func (b *changeBed) recorded(t *testing.T, path, address, subtitle string) bool {
 	t.Helper()
 	_, ok := b.record(t, path, address, subtitle)
@@ -365,7 +370,7 @@ func (b *changeBed) recorded(t *testing.T, path, address, subtitle string) bool 
 // file at path holds under address, and whether it holds one.
 func (b *changeBed) record(t *testing.T, path, address, subtitle string) ([]string, bool) {
 	t.Helper()
-	data, err := os.ReadFile(path)
+	data, err := onHost(t).readFile(path)
 	if err != nil {
 		t.Errorf("the state file: %v", err)
 		return nil, false
@@ -384,11 +389,11 @@ func (b *changeBed) record(t *testing.T, path, address, subtitle string) ([]stri
 	return identities, ok
 }
 
-// noFile reports a file at path.
+// noFile reports a file at path where the product runs.
 func noFile(t *testing.T, path string) {
 	t.Helper()
-	if _, err := os.Lstat(path); !os.IsNotExist(err) {
-		t.Errorf("%s: %v; want no file there", path, err)
+	if there, err := onHost(t).exists(path); there || err != nil {
+		t.Errorf("%s: there %v, %v; want no file there", path, there, err)
 	}
 }
 

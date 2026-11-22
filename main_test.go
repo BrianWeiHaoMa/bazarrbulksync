@@ -37,6 +37,10 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	code := m.Run()
+	if err := closeHost(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		code = 1
+	}
 	os.RemoveAll(dir)
 	os.Exit(code)
 }
@@ -51,7 +55,7 @@ type result struct {
 // BAZARR_URL and BAZARR_API_KEY, and its output streams captured through pipes.
 func command(url, key string, args ...string) (*exec.Cmd, *bytes.Buffer, *bytes.Buffer) {
 	cmd := exec.Command(executable, args...)
-	cmd.Env = []string{"BAZARR_URL=" + url, "BAZARR_API_KEY=" + key}
+	cmd.Env = runEnv{url: url, key: key}.vars()
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	return cmd, &stdout, &stderr

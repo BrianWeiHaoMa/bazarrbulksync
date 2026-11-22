@@ -2,8 +2,10 @@ package main_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"syscall"
@@ -18,25 +20,62 @@ import (
 // user types goes into keys; the program reads it from tty.
 func openTerminal(t *testing.T) (keys, tty *os.File) {
 	t.Helper()
-	keys, err := os.OpenFile("/dev/ptmx", os.O_RDWR|syscall.O_NOCTTY, 0)
+	keys, tty, err := openPTY()
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { keys.Close() })
+	t.Cleanup(func() { keys.Close(); tty.Close() })
+	return keys, tty
+}
+
+func openPTY() (keys, tty *os.File, err error) {
+	keys, err = os.OpenFile("/dev/ptmx", os.O_RDWR|syscall.O_NOCTTY, 0)
+	if err != nil {
+		return nil, nil, err
+	}
 	var unlock int32
 	var n uint32
 	if _, _, e := syscall.Syscall(syscall.SYS_IOCTL, keys.Fd(), syscall.TIOCSPTLCK, uintptr(unsafe.Pointer(&unlock))); e != 0 {
-		t.Fatal(e)
+		keys.Close()
+		return nil, nil, e
 	}
 	if _, _, e := syscall.Syscall(syscall.SYS_IOCTL, keys.Fd(), syscall.TIOCGPTN, uintptr(unsafe.Pointer(&n))); e != 0 {
-		t.Fatal(e)
+		keys.Close()
+		return nil, nil, e
 	}
-	tty, err = os.OpenFile(fmt.Sprintf("/dev/pts/%d", n), os.O_RDWR|syscall.O_NOCTTY, 0)
+	if tty, err = os.OpenFile(fmt.Sprintf("/dev/pts/%d", n), os.O_RDWR|syscall.O_NOCTTY, 0); err != nil {
+		keys.Close()
+		return nil, nil, err
+	}
+	return keys, tty, nil
+}
+
+// runAtTerminalHere runs exe with exactly env and a terminal as its standard
+// input, typed into it before it starts, and kills it after deadline.
+func runAtTerminalHere(exe string, env runEnv, typed string, args []string, deadline time.Duration) (result, error) {
+	keys, tty, err := openPTY()
 	if err != nil {
-		t.Fatal(err)
+		return result{}, err
 	}
-	t.Cleanup(func() { tty.Close() })
-	return keys, tty
+	defer keys.Close()
+	defer tty.Close()
+	cmd := exec.Command(exe, args...)
+	cmd.Env = env.vars()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, &stdout, &stderr
+	if _, err := keys.WriteString(typed); err != nil { // the terminal holds it until read
+		return result{}, err
+	}
+	if err := cmd.Start(); err != nil {
+		return result{}, err
+	}
+	timer := time.AfterFunc(deadline, func() { _ = cmd.Process.Kill() })
+	defer timer.Stop()
+	var exit *exec.ExitError
+	if err := cmd.Wait(); err != nil && !errors.As(err, &exit) {
+		return result{}, err
+	}
+	return result{code: cmd.ProcessState.ExitCode(), stdout: stdout.String(), stderr: stderr.String()}, nil
 }
 
 // TestExecutableConfirmationTerminal: with a terminal as standard input the
