@@ -1,13 +1,17 @@
 // Package fakebazarr serves Bazarr's HTTP API over real HTTP from a library
 // a test declares, for the fast tests. It checks the API key as Bazarr does,
-// records every request it receives, and can be told to hold, fail, or
-// garble an answer. Answer shapes follow Bazarr v1.6.2's source.
+// records every request it receives, applies the fixes and deletes it
+// accepts, and can be told to hold, fail, drop, or garble an answer. Answer
+// shapes follow Bazarr v1.6.2's source and the test bed.
 package fakebazarr
 
 import (
 	"encoding/json"
+	"encoding/pem"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -65,6 +69,9 @@ type Config struct {
 	Version   string
 	StartTime string // a JSON number, as Bazarr's start_time
 	Library   Library
+	// HTTPS serves over TLS, offering HTTP/2 and HTTP/1.1, with a certificate
+	// that CertificatePEM gives.
+	HTTPS bool
 }
 
 const (
@@ -86,6 +93,9 @@ const (
 	kindGarble
 	kindStatus
 	kindBody
+	kindReply
+	kindDrop
+	kindTruncate
 )
 
 var (
@@ -95,6 +105,8 @@ var (
 	Hold = Behavior{kind: kindHold}
 	// Garble answers HTTP 200 with a body that is not JSON.
 	Garble = Behavior{kind: kindGarble}
+	// Drop reads the request and closes the connection without an answer.
+	Drop = Behavior{kind: kindDrop}
 )
 
 // Status answers with the HTTP status code and no Bazarr answer.
@@ -103,14 +115,33 @@ func Status(code int) Behavior { return Behavior{kind: kindStatus, status: code}
 // Body answers HTTP 200 with body as JSON, in place of Bazarr's answer.
 func Body(body string) Behavior { return Behavior{kind: kindBody, body: body} }
 
+// Reply answers with the HTTP status code and exactly body.
+func Reply(code int, body string) Behavior {
+	return Behavior{kind: kindReply, status: code, body: body}
+}
+
+// Truncate answers with the HTTP status code and a body cut short: it
+// declares one byte more than body, sends body, and closes the connection.
+func Truncate(code int, body string) Behavior {
+	return Behavior{kind: kindTruncate, status: code, body: body}
+}
+
 // Request is a request the fake received.
 type Request struct {
 	Method   string
 	Path     string // as sent, escaped
 	RawQuery string
 	Header   http.Header
+	// Body is the request's body as sent.
+	Body string
 	// N counts requests from 1.
 	N int
+}
+
+// Params returns the query's parameters, decoded.
+func (r Request) Params() url.Values {
+	v, _ := url.ParseQuery(r.RawQuery)
+	return v
 }
 
 // Server is a running fake Bazarr.
@@ -119,6 +150,7 @@ type Server struct {
 	URL string
 	cfg Config
 	t   testing.TB
+	hs  *httptest.Server
 
 	mu       sync.Mutex
 	respond  func(Request) Behavior
@@ -138,8 +170,16 @@ func New(t testing.TB, cfg Config) *Server {
 	if cfg.StartTime == "" {
 		cfg.StartTime = DefaultStartTime
 	}
+	cfg.Library = cloneLibrary(cfg.Library) // deletes change the fake's copy only
 	s := &Server{cfg: cfg, t: t, held: make(chan Request, 100), closing: make(chan struct{})}
-	hs := httptest.NewServer(http.HandlerFunc(s.serve))
+	hs := httptest.NewUnstartedServer(http.HandlerFunc(s.serve))
+	if cfg.HTTPS {
+		hs.EnableHTTP2 = true
+		hs.StartTLS()
+	} else {
+		hs.Start()
+	}
+	s.hs = hs
 	t.Cleanup(func() {
 		close(s.closing)
 		hs.Close()
@@ -147,6 +187,16 @@ func New(t testing.TB, cfg Config) *Server {
 	s.URL = hs.URL + cfg.BasePath
 	return s
 }
+
+// CertificatePEM is the certificate of an HTTPS fake, PEM-encoded, for a
+// client to trust.
+func (s *Server) CertificatePEM() []byte {
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: s.hs.Certificate().Raw})
+}
+
+// Client is an HTTP client that trusts the fake, and speaks HTTP/2 to an
+// HTTPS fake.
+func (s *Server) Client() *http.Client { return s.hs.Client() }
 
 // APIKey is the key the fake accepts.
 func (s *Server) APIKey() string { return s.cfg.APIKey }
@@ -156,6 +206,14 @@ func (s *Server) SetVersion(version string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.cfg.Version = version
+}
+
+// SetStartTime sets the start time the status reports, as a restart of
+// Bazarr changes it; start is a JSON number.
+func (s *Server) SetStartTime(start string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cfg.StartTime = start
 }
 
 // Respond sets how each later request is answered; nil serves every request.
@@ -185,12 +243,13 @@ func (s *Server) WaitHeld() Request {
 }
 
 func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
 	s.mu.Lock()
 	req := Request{Method: r.Method, Path: r.URL.EscapedPath(), RawQuery: r.URL.RawQuery,
-		Header: r.Header.Clone(), N: len(s.requests) + 1}
+		Header: r.Header.Clone(), Body: string(body), N: len(s.requests) + 1}
 	s.requests = append(s.requests, req)
 	respond := s.respond
-	version := s.cfg.Version
+	version, startTime := s.cfg.Version, s.cfg.StartTime
 	s.mu.Unlock()
 
 	behavior := Serve
@@ -216,6 +275,25 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(behavior.body))
 		return
+	case kindReply:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(behavior.status)
+		_, _ = w.Write([]byte(behavior.body))
+		return
+	case kindDrop:
+		if conn, _, err := http.NewResponseController(w).Hijack(); err == nil {
+			conn.Close()
+		}
+		return
+	case kindTruncate:
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Length", strconv.Itoa(len(behavior.body)+1))
+		w.WriteHeader(behavior.status)
+		_, _ = w.Write([]byte(behavior.body))
+		if conn, _, err := http.NewResponseController(w).Hijack(); err == nil {
+			conn.Close()
+		}
+		return
 	}
 
 	apiPrefix := s.cfg.BasePath + "/api/"
@@ -224,9 +302,8 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	call := strings.TrimPrefix(r.URL.Path, apiPrefix)
-	switch call {
-	case "system/status", "movies", "series", "episodes":
-	default:
+	ch, isChange := changes[call]
+	if !isChange && !slices.Contains([]string{"system/status", "movies", "series", "episodes"}, call) {
 		// Bazarr 1.6.2 answers a call it does not have, even under /api/ and
 		// without a key, with its web page and HTTP 200, as seen on the test
 		// bed.
@@ -239,16 +316,29 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"message": "Unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if isChange && r.Method == ch.method {
+		code, body := ch.answer(s, r.URL.Query())
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(code)
+		_, _ = w.Write([]byte(body))
 		return
 	}
+	if r.Method != http.MethodGet || isChange {
+		// The fake does not have GET subtitles (sync's references) or the
+		// subtitle uploads; Bazarr's 405 for a method a call lacks.
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_, _ = w.Write([]byte(`{"message": "The method is not allowed for the requested URL."}` + "\n"))
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	var answer any
 	switch call {
 	case "system/status":
 		answer = map[string]any{"data": map[string]any{
 			"bazarr_version":  version,
-			"start_time":      json.RawMessage(s.cfg.StartTime),
+			"start_time":      json.RawMessage(startTime),
 			"package_version": "", "operating_system": "Linux", "python_version": "3.12.8",
 		}}
 	case "movies":

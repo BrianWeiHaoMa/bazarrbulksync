@@ -30,11 +30,13 @@ const (
 type Limits struct {
 	// Read limits each read, the connection check included.
 	Read time.Duration
+	// Change limits each fix or delete request.
+	Change time.Duration
 }
 
 // DefaultLimits holds every limit at 60 seconds until they are measured
 // against a real Bazarr (T1).
-var DefaultLimits = Limits{Read: 60 * time.Second}
+var DefaultLimits = Limits{Read: 60 * time.Second, Change: 60 * time.Second}
 
 // Connection is what the client needs to reach Bazarr.
 type Connection struct {
@@ -76,9 +78,9 @@ func (e *UnreachableError) Error() string {
 
 func (e *UnreachableError) Unwrap() error { return e.Last }
 
-// Client reads from one Bazarr. Only Connect makes one, after a successful
-// connection check. It is not safe for concurrent use: a run has at most one
-// request in flight.
+// Client reads from and changes one Bazarr. Only Connect makes one, after a
+// successful connection check (G2). It is not safe for concurrent use: a run
+// has at most one request in flight.
 type Client struct {
 	address string
 	apiKey  string
@@ -106,10 +108,24 @@ func newClient(conn Connection, base *url.URL) *Client {
 	if limits.Read <= 0 {
 		limits.Read = DefaultLimits.Read
 	}
-	limits.Read = min(limits.Read, RetryWindow) // T1: no limit exceeds G3's window
+	if limits.Change <= 0 {
+		limits.Change = DefaultLimits.Change
+	}
+	// T1: no limit exceeds G3's window.
+	limits.Read = min(limits.Read, RetryWindow)
+	limits.Change = min(limits.Change, RetryWindow)
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	// F3: Bazarr's API is the only contact, so no proxy from the environment.
 	transport.Proxy = nil
+	// HTTP/1 only: with GODEBUG=http2debug set, Go's HTTP/2 transport logs
+	// every header it sends, the API key with them (R2). A run has one
+	// request in flight, so HTTP/2 gains it nothing.
+	transport.Protocols = new(http.Protocols)
+	transport.Protocols.SetHTTP1(true)
+	// Cloning set up HTTP/2 on http.DefaultTransport, whose TLS settings, now
+	// copied here, offer it to the server; DefaultTransport sets none itself.
+	transport.TLSClientConfig = nil
+	transport.TLSNextProto = nil
 	return &Client{
 		address: conn.URL,
 		apiKey:  conn.APIKey,
@@ -152,26 +168,36 @@ func (e *timeoutError) Error() string {
 	return fmt.Sprintf("no answer within %s", e.limit)
 }
 
+// limited returns the context one request runs under: it ends when ctx
+// ends or when limit passes on the client's clock (T1), and timedOut says
+// whether the limit ended it. release frees the limit's timer.
+func (c *Client) limited(ctx context.Context, limit time.Duration) (reqCtx context.Context, timedOut func() bool, release func()) {
+	reqCtx, cancel := context.WithCancel(ctx)
+	var expired atomic.Bool
+	stop := c.clock.AfterFunc(limit, func() {
+		expired.Store(true)
+		cancel()
+	})
+	return reqCtx, expired.Load, func() {
+		stop()
+		cancel()
+	}
+}
+
 // attempt sends one GET and decodes a 200 answer into into. It returns
 // ErrStopped when ctx ended.
 func (c *Client) attempt(ctx context.Context, call string, query url.Values, into any, limit time.Duration) error {
 	if ctx.Err() != nil {
 		return ErrStopped
 	}
-	reqCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	var timedOut atomic.Bool
-	stop := c.clock.AfterFunc(limit, func() {
-		timedOut.Store(true)
-		cancel()
-	})
-	defer stop()
+	reqCtx, timedOut, release := c.limited(ctx, limit)
+	defer release()
 
 	err := c.get(reqCtx, call, query, into)
 	switch {
 	case ctx.Err() != nil:
 		return ErrStopped
-	case timedOut.Load():
+	case timedOut():
 		// Also when the answer was complete only after the limit passed.
 		return &timeoutError{limit: limit}
 	}

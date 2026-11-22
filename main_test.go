@@ -122,3 +122,39 @@ func TestExecutablePlainOutput(t *testing.T) {
 		t.Errorf("want one line per subtitle, the control characters written as escapes, got:\n%s", r.stdout)
 	}
 }
+
+// With Go's HTTP/2 debugging on, an HTTP/2 client logs every header it
+// sends to standard error, the API key's among them (R2).
+func TestHTTP2DebugKeepsKey(t *testing.T) {
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
+		t.Skip("the executable trusts the fake's certificate through SSL_CERT_FILE, which only the Linux rule reads (S7)")
+	}
+	srv := fakebazarr.New(t, fakebazarr.Config{HTTPS: true, Library: fakebazarr.Library{Movies: []fakebazarr.Movie{
+		{RadarrID: 1, Title: "Sintel", Subtitles: []fakebazarr.Subtitle{{Path: "/movies/Sintel/Sintel.en.srt", Language: "en"}}},
+	}}})
+	// The check shows nothing unless the fake offers HTTP/2.
+	resp, err := srv.Client().Get(srv.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.ProtoMajor != 2 {
+		t.Fatalf("the HTTPS fake answered over %s, want HTTP/2 offered", resp.Proto)
+	}
+	certFile := filepath.Join(t.TempDir(), "fake.pem")
+	if err := os.WriteFile(certFile, srv.CertificatePEM(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cmd, stdout, stderr := command(srv.URL, srv.APIKey(), "list")
+	cmd.Env = append(cmd.Env, "SSL_CERT_FILE="+certFile, "GODEBUG=http2debug=1")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	waitExit(t, cmd)
+	if code := cmd.ProcessState.ExitCode(); code != 0 || !strings.Contains(stdout.String(), "Sintel.en.srt") {
+		t.Fatalf("code %d, stdout %q, stderr %q; want the fake's subtitle listed", code, stdout, stderr)
+	}
+	if strings.Contains(stderr.String(), srv.APIKey()) {
+		t.Errorf("standard error holds the API key (R2):\n%s", stderr)
+	}
+}
