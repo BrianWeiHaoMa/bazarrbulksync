@@ -220,9 +220,17 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 
 	apiPrefix := s.cfg.BasePath + "/api/"
 	if !strings.HasPrefix(r.URL.Path, apiPrefix) {
-		// Bazarr's web interface answers every other path with its page.
-		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte("<!DOCTYPE html><html><head><title>Bazarr</title></head><body></body></html>"))
+		webPage(w)
+		return
+	}
+	call := strings.TrimPrefix(r.URL.Path, apiPrefix)
+	switch call {
+	case "system/status", "movies", "series", "episodes":
+	default:
+		// Bazarr 1.6.2 answers a call it does not have, even under /api/ and
+		// without a key, with its web page and HTTP 200, as seen on the test
+		// bed.
+		webPage(w)
 		return
 	}
 	// Bazarr also takes the key as an `apikey` parameter; the fake does not,
@@ -231,7 +239,6 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"message": "Unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	call := strings.TrimPrefix(r.URL.Path, apiPrefix)
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -255,12 +262,16 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		answer = s.episodes(seriesIDs, episodeIDs)
-	default:
-		http.Error(w, `{"message": "not found"}`, http.StatusNotFound)
-		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(answer)
+}
+
+// webPage answers as Bazarr's web interface does every path that is not
+// one of its API calls.
+func webPage(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte("<!doctype html><html lang=\"en\"><head><title>Bazarr</title></head><body></body></html>"))
 }
 
 func ids(r *http.Request, name string) []int {
